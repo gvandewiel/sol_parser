@@ -15,8 +15,8 @@ class scout(object):
             else:
                 setattr(self, key, obj(value) if isinstance(
                     value, dict) else value)
-        self.leeftijd = self.c_age()
-        self.m_leeftijd = self.m_age()
+        self.leeftijd = self.calc_age()
+        self.m_leeftijd = self.calc_age(refdate=self.migration_date)
 
     def calc_age(self, refdate=date.today()):
         if refdate is None:
@@ -32,8 +32,3 @@ class scout(object):
         else:
             return '{} ({}) {} {}'.format(self.Lid_initialen, self.Lid_voornaam, self.Lid_tussenvoegsel, self.Lid_achternaam)
 
-    def c_age(self):
-        return self.calc_age()
-
-    def m_age(self):
-        return self.calc_age(refdate=self.migration_date)
