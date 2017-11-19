@@ -59,6 +59,8 @@ class Scout(object):
         born = self.Lid_geboortedatum
         format_string = "%d-%m-%Y"
         born = datetime.strptime(born, format_string).date()
+        # Add datetime object for sorting purpose
+        self.born = born
         return refdate.year - born.year - ((refdate.month, refdate.day) < (born.month, born.day))
 
     def __name__(self):
