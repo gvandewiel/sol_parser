@@ -7,12 +7,12 @@ from fpdf import FPDF
 class PDF(FPDF):
     def header(self):
         # Logo
-        #self.image('FL.jpg', 25, 15, 33)
-        #self.image('Scouting.jpg', 70, 20, 110)
+        self.image('FL.jpg', 25, 15, 33)
+        self.image('Scouting.jpg', 70, 20, 110)
         # Arial bold 15
         self.set_font('Arial', 'B', 15)
         # Move "cursor" down
-        self.cell(w=0, h=30, ln=1)
+        self.cell(w=0, h=15, ln=1)
         # Title
         self.cell(w=70, ln=0)
         self.cell(w=80, h=20, txt='Don Garcia Moreno', border=0, ln=1, align='C')
@@ -20,13 +20,9 @@ class PDF(FPDF):
         self.set_font('Arial', style='', size=12)
         self.cell(w=0, h=6, txt='p/a J. van Brunschot', border=0, ln=0, align='L')
         self.cell(w=0, h=6, txt='Rabobank IBAN: NL45RABO0133812006', border=0, ln=1, align='R')
-        
         self.cell(w=0, h=6, txt='Neereindseweg 32', border=0, ln=1, align='L')
-        
         self.cell(w=0, h=6, txt='5091 RD Oostelbeers', border=0, ln=1, align='L')
-        
         self.cell(w=0, h=6, txt='tel. 013-5143366', border=0, ln=1, align='L')
-        
         self.cell(w=0, h=6, txt='', ln=1)
         self.cell(w=0, h=6, txt='', ln=1)
 
@@ -46,23 +42,62 @@ class PDF(FPDF):
         self.set_font('Arial', 'I', 12)
         self.multi_cell(w=0, h=6, align='C', ln=1, txt='Contributie 2017/2018 en het notanummer.')
         self.set_font('Arial', '', 12)
-        self.multi_cell(w=0, h=6, align='L', ln=1, txt=('\n'
-        'Het bedrag mag in twee termijnen worden voldaan, het eerste voor 1 februari 2018, het tweede voor 1 april 2018.'
-        'Voor de tweede termijn krijgt u geen herinnering.\n'
-        '\n'
-        '\n'
-        '24 nov 2018,\n'
-        'Namens de scouting\n'
-        'A. Vroegh, Penningmeester\n'
-        'Tel.: 013-514-1766\n'
-        '\n'
-        'Het derde en volgende lid/leden uit een gezin betaalt de helft van de normaal verschuldigde contributie.'
-        ))
+        self.multi_cell(w=0,
+                        h=6,
+                        align='L',
+                        ln=1,
+                        txt=(
+                            '\n'
+                            'Het bedrag mag in twee termijnen worden voldaan, het eerste voor 1 februari 2018, het tweede voor 1 april 2018.'
+                            'Voor de tweede termijn krijgt u geen herinnering.\n'
+                            '\n'
+                            '\n'
+                            '24 nov 2018,\n'
+                            'Namens de scouting\n'
+                            'A. Vroegh, Penningmeester\n'
+                            'Tel.: 013-514-1766\n'
+                            '\n'
+                            'Het derde en volgende lid/leden uit een gezin betaalt de helft van de normaal verschuldigde contributie.'
+                        ))
+
+def html_start(html_file):
+    html_str = """
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title></title>
+        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+        <script src="scroller.js"></script>
+    </head>
+    <body>
+        <div class="container">
+            <ul>
+"""
+    html_file.write(html_str)
+
+
+def html_end(html_file):
+    html_str = """
+            </ul>
+        </div>
+    </body>
+</html>
+    """
+    html_file.write(html_str)
+    html_file.close()
 
 if __name__ == '__main__':
     """Create adres dictionary which contains all members grouped on adres.
     For each adres a contribution letter is generated
     """
+
+    html_file = open("output.html", "w")
+    html_start(html_file)
+
     # Parse SOL export file
     scouts_list = Parser('Ledenexport.csv')
 
@@ -124,4 +159,6 @@ if __name__ == '__main__':
             pdf.cell(w=40, h=6, txt='Totaal', ln=0, align='L')
             pdf.cell(w=0, h=6, txt='{}'.format(t_contr), ln=1, align='R')
             print(lid.Lid_adres)
-            pdf.output('pdf\{}.pdf'.format(lid.Lid_e_mailadres_ouder_verzorger_1), 'F')
+            html_file.write("<li>20172018{}\t\t{}\t\t{}</li>".format(iNotanumber, lid.Lid_adres, s_contr))
+            pdf.output('20172018{}.pdf'.format(iNotanumber), 'F')
+    html_end(html_file)
