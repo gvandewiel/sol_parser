@@ -75,14 +75,25 @@ def html_start(html_file):
     </head>
     <body>
         <div class="container">
-            <ul>
+            <table class="table-striped">
+                <thead>
+                    <tr>
+                        <th>Nummer</th>
+                        <th>Adres</th>
+                        <th>Achternaam</th>
+                        <th>Contributie</th>
+                        <th>Email</th>
+                   </tr>
+               </thead>
+               <tbody>
 """
     html_file.write(html_str)
 
 
 def html_end(html_file):
     html_str = """
-            </ul>
+               </tbody>
+            </table>
         </div>
     </body>
 </html>
@@ -159,6 +170,6 @@ if __name__ == '__main__':
             pdf.cell(w=40, h=6, txt='Totaal', ln=0, align='L')
             pdf.cell(w=0, h=6, txt='{}'.format(t_contr), ln=1, align='R')
             print(lid.Lid_adres)
-            html_file.write("<li>20172018{}\t\t{}\t\t{}</li>".format(iNotanumber, lid.Lid_adres, s_contr))
+            html_file.write("<tr><td>20172018{}</td><td>{}</td><td>{}</td>".format(iNotanumber, lid.Lid_adres, lid.Lid_achternaam, s_contr))
             pdf.output('20172018{}.pdf'.format(iNotanumber), 'F')
     html_end(html_file)
