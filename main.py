@@ -7,8 +7,8 @@ from fpdf import FPDF
 class PDF(FPDF):
     def header(self):
         # Logo
-        self.image('FL.jpg', 25, 15, 33)
-        self.image('Scouting.jpg', 70, 20, 110)
+        #self.image('FL.jpg', 25, 15, 33)
+        #self.image('Scouting.jpg', 70, 20, 110)
         # Arial bold 15
         self.set_font('Arial', 'B', 15)
         # Move "cursor" down
@@ -18,21 +18,17 @@ class PDF(FPDF):
         self.cell(w=80, h=20, txt='Don Garcia Moreno', border=0, ln=1, align='C')
 
         self.set_font('Arial', style='', size=12)
-        self.cell(w=15, h=12, txt='', ln=0)
         self.cell(w=0, h=6, txt='p/a J. van Brunschot', border=0, ln=0, align='L')
         self.cell(w=0, h=6, txt='Rabobank IBAN: NL45RABO0133812006', border=0, ln=1, align='R')
         
-        self.cell(w=15, h=12, txt='', ln=0)
         self.cell(w=0, h=6, txt='Neereindseweg 32', border=0, ln=1, align='L')
         
-        self.cell(w=15, h=12, txt='', ln=0)
         self.cell(w=0, h=6, txt='5091 RD Oostelbeers', border=0, ln=1, align='L')
         
-        self.cell(w=15, h=12, txt='', ln=0)
         self.cell(w=0, h=6, txt='tel. 013-5143366', border=0, ln=1, align='L')
         
-        self.cell(w=15, h=12, txt='', ln=0)
-        self.cell(w=0, h=12, txt='', ln=1)
+        self.cell(w=0, h=6, txt='', ln=1)
+        self.cell(w=0, h=6, txt='', ln=1)
 
     # Page footer
     def footer(self):
@@ -41,39 +37,27 @@ class PDF(FPDF):
         # Arial italic 8
         self.set_font('Arial', '', 12)
 
-        self.cell(w=15, h=12, txt='', ln=0)
-        self.cell(w=0, h=6, txt='Gaarne bovenstaand bedrag overmaken op bankrekening nummer (IBAN):', ln=1)
-
-        self.cell(w=15, h=12, txt='', ln=0)
-        self.cell(w=0, h=6, txt='NL45 RABO 0 13 38 12 006', ln=1, align='C')
-
-        self.cell(w=15, h=12, txt='', ln=0)
-        self.cell(w=0, h=6, txt='van bovengenoemde stichting onder melding van:', ln=1)
-
-        self.cell(w=15, h=12, txt='', ln=0)
-        self.cell(w=0, h=6, txt='Contributie 2017/2018 én de naam of namen van de kinderen.', ln=1)
-
-        self.cell(w=15, h=24, txt='', ln=0)
-        self.cell(w=0, h=6, txt='Het bedrag mag in twee termijnen worden voldaan, het eerste voor 1 februari 2018,', ln=1)
-        self.cell(w=15, h=6, txt='', ln=0)
-        self.cell(w=0, h=6, txt='het tweede voor 1 april 2018. Voor de tweede termijn krijgt u geen herinnering.', ln=1)
-
-        self.cell(w=15, h=24, txt='', ln=0)
-        self.cell(w=0, h=6, txt='                18 nov 2017,', ln=1)
-
-        self.cell(w=15, h=12, txt='', ln=0)
-        self.cell(w=0, h=6, txt='                Namen de scouting', ln=1)
-
-        self.cell(w=15, h=12, txt='', ln=0)
-        self.cell(w=0, h=6, txt='                A. Vroegh, Penningmeester', ln=1)
-
-        self.cell(w=15, h=12, txt='', ln=0)
-        self.cell(w=0, h=6, txt='                Tel.: 013-514-1766', ln=1)
-
-        self.cell(w=0, h=24, txt='', ln=1)
-
-        self.cell(w=15, h=12, txt='', ln=0)
-        self.cell(w=0, txt='Het derde en volgende lid/leden uit één gezin betaalt de helft van de normaal verschuldigde contributie.', ln=1)
+        self.multi_cell(w=0, h=6, align='L', ln=1, txt='Gaarne bovenstaand bedrag overmaken op bankrekening nummer (IBAN):')
+        self.set_font('Arial', 'B', 12)
+        self.multi_cell(w=0, h=6, align='C', ln=1, txt='NL45RABO0133812006')
+        self.set_font('Arial', '', 12)
+        self.multi_cell(w=0, h=6, align='C', ln=1, txt='')
+        self.multi_cell(w=0, h=6, align='L', ln=1, txt='van bovengenoemde stichting onder vermelding van:')
+        self.set_font('Arial', 'I', 12)
+        self.multi_cell(w=0, h=6, align='C', ln=1, txt='Contributie 2017/2018 en het notanummer.')
+        self.set_font('Arial', '', 12)
+        self.multi_cell(w=0, h=6, align='L', ln=1, txt=('\n'
+        'Het bedrag mag in twee termijnen worden voldaan, het eerste voor 1 februari 2018, het tweede voor 1 april 2018.'
+        'Voor de tweede termijn krijgt u geen herinnering.\n'
+        '\n'
+        '\n'
+        '24 nov 2018,\n'
+        'Namens de scouting\n'
+        'A. Vroegh, Penningmeester\n'
+        'Tel.: 013-514-1766\n'
+        '\n'
+        'Het derde en volgende lid/leden uit een gezin betaalt de helft van de normaal verschuldigde contributie.'
+        ))
 
 if __name__ == '__main__':
     """Create adres dictionary which contains all members grouped on adres.
@@ -92,6 +76,7 @@ if __name__ == '__main__':
 
         # Instantiation of inherited class
         pdf = PDF()
+        pdf.set_margins(left=25.0, top=25.0)
         pdf.alias_nb_pages()
         pdf.add_page()
         pdf.set_font('Arial', '', 12)
@@ -107,10 +92,9 @@ if __name__ == '__main__':
                 if not bjeugdlid:
                     bjeugdlid = True
                     iNotanumber += 1
-                    pdf.cell(w=15, h=12, txt='', ln=0)
                     pdf.cell(w=0, h=6, txt='Nota voor de ouder(s)/verzorger(s) van:', ln=0, align='L')
                     pdf.cell(w=0, h=6, txt='Notanumber: 20172018{}'.format(iNotanumber), ln=1, align='R')
-                    pdf.cell(w=0, h=12, txt='', ln=1)
+                    pdf.cell(w=0, h=6, txt='', ln=1)
                 # For members of speltak 'stam' different rates are
                 # applied when the have a second 'non-jeugdlid' function.
                 # An update of the speltak is applied for later use.
@@ -130,17 +114,14 @@ if __name__ == '__main__':
 
                 t_contr += s_contr
 
-                pdf.cell(w=15, h=12, txt='', ln=0)
-                pdf.cell(w=125, h=6, txt=lid.naam, ln=0, align='L')
+                pdf.cell(w=100, h=6, txt=lid.naam, ln=0, align='L')
                 pdf.cell(w=40, h=6, txt=lid.Speleenheid, ln=0, align='L')
                 pdf.cell(w=0, h=6, txt='{}'.format(s_contr), ln=1, align='R')
         if bjeugdlid:
-            pdf.cell(w=15, h=0, txt='', ln=0)
             pdf.cell(w=0, h=0, border='T', ln=1)
-
             pdf.set_font('Arial', 'B', 12)
-            pdf.cell(w=15, h=12, txt='', ln=0)
-            pdf.cell(w=125, h=6, txt='', ln=0)
+            pdf.cell(w=100, h=6, txt='', ln=0)
             pdf.cell(w=40, h=6, txt='Totaal', ln=0, align='L')
             pdf.cell(w=0, h=6, txt='{}'.format(t_contr), ln=1, align='R')
-            pdf.output('tuto2.pdf', 'F')
+            print(lid.Lid_adres)
+            pdf.output('pdf\{}.pdf'.format(lid.Lid_e_mailadres_ouder_verzorger_1), 'F')
