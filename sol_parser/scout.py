@@ -37,7 +37,7 @@ class Scout(object):
         self.m_leeftijd = self.__calc_age__(refdate=self.migration_date)
 
     def __attr_check__(self, text=''):
-        for ch in [' ', '/']:
+        for ch in [' ', '/','-']:
             if ch in text:
                 text = text.replace(ch, '_')
         return text
