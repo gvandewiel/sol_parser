@@ -32,6 +32,7 @@ class Parser():
         """
         self.objLeden = list()
         self.migration_date = self.migration_date()
+        self.season_start, self.season_end = self.season()
 
         with open(csvfile) as csvfile:
             try:
@@ -69,6 +70,19 @@ class Parser():
 
         return migration_date
 
+    def season(self):
+        """Summary.
+
+        Returns:
+            TYPE: Description
+        """
+        # Return start and End year of the current season
+        today = date.today()
+        if today.month >= 9 and today.day >= 1:
+            return (today.year, today.year+1)
+        else:
+            return (today.year-1, today.year)
+    
     def filter_age(self, age):
         """Summary.
 
