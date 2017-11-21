@@ -6,10 +6,6 @@ from fpdf import FPDF
 import os
 
 class PDF(FPDF):
-    def __init__(self, season_start, season_end):
-        self.season_start = season_start
-        self.season_end = season_end
-    
     def header(self):
         # Logo
         self.image('FL.jpg', 25, 15, 33)
@@ -32,7 +28,9 @@ class PDF(FPDF):
         self.cell(w=0, h=6, txt='', ln=1)
 
     # Page footer
-    def footer(self, season_start, season_end):
+    def footer(self):
+        global season_start
+        global season_end
         # Position at 1.5 cm from bottom
         self.set_y(-125)
         # Arial italic 8
@@ -45,7 +43,7 @@ class PDF(FPDF):
         self.multi_cell(w=0, h=6, align='C', ln=1, txt='')
         self.multi_cell(w=0, h=6, align='L', ln=1, txt='van bovengenoemde stichting onder vermelding van:')
         self.set_font('Arial', 'I', 12)
-        self.multi_cell(w=0, h=6, align='C', ln=1, txt='Contributie {}/{} en het notanummer.'.format(self.season_start, self.season_end)
+        self.multi_cell(w=0, h=6, align='C', ln=1, txt='Contributie {} / {} en het notanummer.'.format(season_start, season_end))
         self.set_font('Arial', '', 12)
         self.multi_cell(w=0,
                         h=6,
@@ -53,11 +51,11 @@ class PDF(FPDF):
                         ln=1,
                         txt=(
                             '\n'
-                            'Het bedrag mag in twee termijnen worden voldaan, het eerste voor 1 februari {0}, het tweede voor 1 april {0}.'.format(self.season_end)
+                            'Het bedrag mag in twee termijnen worden voldaan, het eerste voor 1 februari ' + str(season_end) + ', het tweede voor 1 april ' + str(season_end) + '.'
                             'Voor de tweede termijn krijgt u geen herinnering.\n'
                             '\n'
                             '\n'
-                            'Nov {0},\n'.format(self.season_start)
+                            'Nov ' + str(season_start) + ',\n'
                             'Namens de scouting\n'
                             'A. Vroegh, Penningmeester\n'
                             'Tel.: 013-514-1766\n'
@@ -140,7 +138,7 @@ if __name__ == '__main__':
     for adres, alist in adres_list.items():
 
         # Instantiation of inherited class
-        pdf = PDF(season_start, season_end)
+        pdf = PDF()
         pdf.set_margins(left=25.0, top=25.0)
         pdf.alias_nb_pages()
         pdf.add_page()
@@ -157,8 +155,9 @@ if __name__ == '__main__':
                 if not bjeugdlid:
                     bjeugdlid = True
                     iNotanumber += 1
-                    pdf.cell(w=0, h=6, txt='Nota voor de ouder(s)/verzorger(s) van:', ln=0, align='L')
-                    pdf.cell(w=0, h=6, txt='Notanumber: {}{}{}'.format(season_start, season_end, iNotanumber), ln=1, align='R')
+                    pdf.cell(w=100, h=6, txt='Nota voor de ouder(s)/verzorger(s) van:', ln=0, align='L')
+                    pdf.cell(w=40, h=6, txt='Notanumber:', ln=0, align='L')
+                    pdf.cell(w=0, h=6, txt='{}{}{:03}'.format(season_start, season_end, iNotanumber), ln=1, align='R')
                     pdf.cell(w=0, h=6, txt='', ln=1)
                 # For members of speltak 'stam' different rates are
                 # applied when the have a second 'non-jeugdlid' function.
@@ -180,7 +179,7 @@ if __name__ == '__main__':
                 t_contr += s_contr
 
                 pdf.cell(w=100, h=6, txt=lid.naam, ln=0, align='L')
-                pdf.cell(w=40, h=6, txt=lid.Speleenheid, ln=0, align='L')
+                pdf.cell(w=40, h=6, txt=lid.Speleenheid.capitalize(), ln=0, align='L')
                 pdf.cell(w=0, h=6, txt='{}'.format(s_contr), ln=1, align='R')
         if bjeugdlid:
             pdf.cell(w=0, h=0, border='T', ln=1)
@@ -192,11 +191,11 @@ if __name__ == '__main__':
             print(lid.Lid_adres)
 
             html_file.write('<tr>')
-            html_file.write('   <td class="col-xs-2">{}{}{}</td>'.format(season_start, season_end, iNotanumber))
+            html_file.write('   <td class="col-xs-2">{}{}{:03}</td>'.format(season_start, season_end, iNotanumber))
             html_file.write('   <td class="col-xs-2">{}</td>'.format(lid.Lid_adres))
             html_file.write('   <td class="col-xs-3">{}</td>'.format(lid.Lid_achternaam))
             html_file.write('   <td class="col-xs-1 text-right">{}</td>'.format(s_contr))
             html_file.write('   <td class="col-xs-3">{}</td>'.format(lid.Lid_e_mailadres))
             html_file.write('</tr>')
-            pdf.output(os.path.join(output_dir, '{}{}{} - {}.pdf'.format(season_start, season_end, iNotanumber, lid.Lid_e_mailadres)), 'F')
+            pdf.output(os.path.join(output_dir, '{}{}{:03} - {}.pdf'.format(season_start, season_end, iNotanumber, lid.Lid_e_mailadres)), 'F')
     html_end(html_file)
