@@ -3,6 +3,7 @@
 
 ### Project files ###
 *.csv
+*.pdf
 
 ### macOS ###
 *.DS_Store
