@@ -1,11 +1,11 @@
 contr_list = {
-    'bevers': 85,
-    'welpen jongens': 105,
-    'welpen-meisjes': 105,
-    'scouts': 105,
-    'explorers': 105,
-    'stam_leiding': 45,
-    'stam': 60
+    'bevers': 95,
+    'welpen jongens': 115,
+    'welpen-meisjes': 115,
+    'scouts': 115,
+    'explorers': 115,
+    'stam_leiding': 55,
+    'stam': 70
 }
 
 
