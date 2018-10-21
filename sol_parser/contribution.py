@@ -1,4 +1,4 @@
-from contributie import contr_list
+# from ..contributie import contr_list
 from fpdf import FPDF
 import os
 import unicodedata
@@ -23,8 +23,9 @@ class PDF(FPDF):
     def header(self):
         """PDF Header."""
         # Logo
-        self.image('FL.jpg', 25, 15, 33)
-        self.image('Scouting.jpg', 70, 20, 110)
+        data_path = os.path.join(os.path.dirname(__file__),'resources')
+        self.image(os.path.join(data_path, 'FL.jpg'), 25, 15, 33)
+        self.image(os.path.join(data_path, 'Scouting.jpg'), 70, 20, 110)
 
         self.set_font('Arial', 'B', 15)
         # Move "cursor" down
@@ -55,23 +56,22 @@ class PDF(FPDF):
         self.set_font('Arial', '', 12)
 
         # Add footer text
-        self.multi_cell(w=0, h=6, align='L', ln=1,
+        self.multi_cell(w=0, h=6, align='L', 
                         txt='Gaarne bovenstaand bedrag overmaken op bankrekening nummer (IBAN):')
         self.set_font('Arial', 'B', 12)
-        self.multi_cell(w=0, h=6, align='C', ln=1, txt='NL45RABO0133812006')
+        self.multi_cell(w=0, h=6, align='C', txt='NL45RABO0133812006')
         self.set_font('Arial', '', 12)
-        self.multi_cell(w=0, h=6, align='C', ln=1, txt='')
-        self.multi_cell(w=0, h=6, align='L', ln=1,
+        self.multi_cell(w=0, h=6, align='C', txt='')
+        self.multi_cell(w=0, h=6, align='L', 
                         txt='van bovengenoesme stichting onder vermelding van:')
         self.set_font('Arial', 'I', 12)
-        self.multi_cell(w=0, h=6, align='C', ln=1,
+        self.multi_cell(w=0, h=6, align='C', 
                         txt='Contributie {} / {} en het notanummer.'.format(season_start, season_end))
-        self.multi_cell(w=0, h=6, align='C', ln=1, txt='\n')
+        self.multi_cell(w=0, h=6, align='C', txt='\n')
         self.set_font('Arial', '', 12)
         self.multi_cell(w=0,
                         h=6,
                         align='L',
-                        ln=1,
                         txt=(
                             'Het bedrag mag in twee termijnen worden voldaan, het eerste voor 1 februari ' +
                             str(season_end) + ', het tweede voor 1 april ' + str(season_end) + '.'
@@ -86,7 +86,6 @@ class PDF(FPDF):
                             'Het derde en volgende lid/leden uit een gezin betaalt de helft van de normaal verschuldigde contributie.'
                         ))
 
-
 class Nota():
     """Creates contribution letter for each address."""
 
@@ -95,25 +94,27 @@ class Nota():
     season_end = ''
 
     def __init__(self,
-                 season_start,
-                 season_end,
-                 output_dir='pdf',
-                 html_file=''):
+                 ss='',
+                 se='',
+                 cd={},
+                 od='pdf',
+                 hf=''):
         """Initiation routine for class."""
         # Create output directory
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        if not os.path.exists(od):
+            os.makedirs(od)
 
         # Class variables
-        type(self).season_start = season_start
-        type(self).season_end = season_end
+        type(self).season_start = ss
+        type(self).season_end = se
 
-        self.html_file = html_file
+        self.html_file = hf
 
         # Instance variables
-        self.season_start = season_start
-        self.season_end = season_end
-        self.output_dir = output_dir
+        self.season_start = ss
+        self.season_end = se
+        self.cd = cd
+        self.output_dir = od
 
         # start html output
         self.html_file.write(self.html_start())
@@ -144,19 +145,17 @@ class Nota():
         self.t_contr = 0
 
         sub_table = ''
-        print('\n==============={}==============='.format(self.adres.capitalize()))
+        print('\n==============={:^25}==============='.format(self.adres.capitalize()))
         for lid in self.alist:
             if 'jeugdlid *' in normalize(lid.functie):
                 if not self.bjeugdlid:
                     self.bjeugdlid = True
                     type(self).iNotanumber += 1
 
-                    self.pdf.cell(
-                        w=100, h=6, txt='Nota voor de ouder(s)/verzorger(s) van:', ln=0, align='L')
-                    self.pdf.cell(w=40, h=6, txt='Notanumber:', ln=0, align='L')
-                    self.pdf.cell(w=0, h=6, txt='{}{}{:03}'.format(self.season_start,
-                                                                   self.season_end, type(self).iNotanumber), ln=1, align='R')
-                    self.pdf.cell(w=0, h=6, txt='', ln=1)
+                    self.pdf.cell(w=100, h=6, txt='Nota voor de ouder(s)/verzorger(s) van:', ln=0, align='L')
+                    self.pdf.cell(w=40,  h=6, txt='Notanumber:', ln=0, align='L')
+                    self.pdf.cell(w=0,   h=6, txt='{}{}{:03}'.format(self.season_start,self.season_end, type(self).iNotanumber), ln=1, align='R')
+                    self.pdf.cell(w=0,   h=6, txt='', ln=1)
 
                 # For members of speltak 'stam' different rates are
                 # applied when the have a second 'non-jeugdlid' function.
@@ -176,16 +175,16 @@ class Nota():
                 # From the 3rd scout a 50% discout is applied.
                 self.cnt += 1
                 if self.cnt > 2:
-                    self.s_contr = 0.5 * contr_list[lid.speleenheid]
+                    self.s_contr = 0.5 * self.cd[lid.speleenheid]
                 else:
-                    self.s_contr = 1.0 * contr_list[lid.speleenheid]
+                    self.s_contr = 1.0 * self.cd[lid.speleenheid]
 
                 self.t_contr += self.s_contr
-                print('\t{: <25}{: <20}{: <5}'.format(lid.naam, lid.speleenheid, self.s_contr))
+                print('{:<25}{:<20}{:>6.2f}'.format(lid.naam, lid.speleenheid, self.s_contr))
                 sub_table = sub_table + self.accordion_data(lid)
                 self.pdf.cell(w=100, h=6, txt=lid.naam, ln=0, align='L')
-                self.pdf.cell(w=40, h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
-                self.pdf.cell(w=0, h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
+                self.pdf.cell(w=40,  h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
+                self.pdf.cell(w=0,   h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
 
         if self.bjeugdlid:
             self.pdf.cell(w=0, h=0, border='T', ln=1)
@@ -205,7 +204,8 @@ class Nota():
             self.pdf.output(os.path.join(self.output_dir, '{}{}{:03} - {}.pdf'.format(self.season_start,
                                                                                       self.season_end, type(self).iNotanumber, lid.lid_e_mailadres)), 'F')
         else:
-            print('\t{: <25}{: <20}'.format(lid.naam, lid.speleenheid))
+            pass
+            # print('\t{: <25}{: <20}'.format(lid.naam, lid.speleenheid))
 
     def html_start(self):
         return '''

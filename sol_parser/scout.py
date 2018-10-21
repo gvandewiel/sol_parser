@@ -45,6 +45,9 @@ class Scout(object):
         self.leeftijd = self.__calc_age__()
         self.m_leeftijd = self.__calc_age__(refdate=self.migration_date)
 
+    def __repr__(self):
+        return '{:<20}{:>3}'.format(self.naam, self.leeftijd)
+
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
