@@ -51,7 +51,7 @@ def main(args=None):
     application_path = os.path.dirname(sys.argv[0])
 
     # Input file
-    infile = os.paht.join(application_path, options.infile)
+    infile = os.path.join(application_path, options.infile)
 
     # Contributie file
     cont_file = os.path.join(application_path, options.contfile)
