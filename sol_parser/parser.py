@@ -16,7 +16,7 @@ from csv import DictReader
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from operator import itemgetter
-
+from pprint import pprint
 from .scout import Scout
 
 import unicodedata
@@ -27,10 +27,17 @@ def normalize(text):
 
     To used when performing string comparisson
     """
-    return unicodedata.normalize("NFKD", text.casefold())
+    return unicodedata.normalize("NFKD", text.lower())
 
 
-class Parser():
+def str_check(str=''):
+    for char in [' ', '/', '-']:
+        if char in str:
+            str = str.replace(char, '_')
+    return str
+
+
+class ScoutsCollection():
     """Parser class for SOL csv output
 
     Attributes:
@@ -38,7 +45,7 @@ class Parser():
         objLeden (dict): Dictionary containig all members from csvfile
     """
 
-    def __init__(self, csvfile):
+    def __init__(self):
         """Initiate class
 
         Args:
@@ -47,11 +54,17 @@ class Parser():
         self.objLeden = list()
         self.migration_date = self.migration_date()
         self.season_start, self.season_end = self.season()
+        # self.members = ScoutsCollection()
 
+
+    def __call__(self, csvfile):
         with open(csvfile) as csvfile:
             try:
                 reader = DictReader(csvfile)
+                reader.fieldnames = [normalize(str_check(fn)) for fn in reader.fieldnames]
+                pprint(reader.fieldnames)
                 for row in reader:
+                    # self.members.add(Scout(row, self.migration_date))
                     self.objLeden.append(Scout(row, self.migration_date))
             finally:
                 csvfile.close()

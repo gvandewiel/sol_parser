@@ -3,11 +3,57 @@
 from datetime import *
 from datetime import date
 import unicodedata
+from fpdf import FPDF
+import os
+
+
+class PDF(FPDF):
+    """
+    PDF class based on fpdf.
+
+    Header contains fixed content
+    Footer conains dynamic content to present the correct dates / years
+    """
+
+    def header(self):
+        """PDF Header."""
+        # Logo
+        data_path = os.path.join(os.path.dirname(__file__),'resources')
+        self.image(os.path.join(data_path, 'FL.jpg'), 25, 15, 33)
+        self.image(os.path.join(data_path, 'Scouting.jpg'), 70, 20, 110)
+        self.add_font('Arial','','arial.ttf', uni=True)
+        self.set_font('Arial', 'B', 15)
+        # Move "cursor" down
+        self.cell(w=0, h=15, ln=1)
+        # Title
+        self.cell(w=70, ln=0)
+        self.cell(w=80, h=20, txt='Don Garcia Moreno', border=0, ln=1, align='C')
+
+        self.set_font('Arial', style='', size=12)
+        self.cell(w=0, h=6, txt='', ln=1)
+        self.cell(w=0, h=6, txt='', ln=1)
+
+    def footer(self):
+        """PDF Footer."""
+        # Global variables derived from Parser
+        # Position at 12.5 cm from bottom
+        self.set_y(-125)
+
+        # Set font size
+        self.add_font('Arial','','arial.ttf', uni=True)
+        self.set_font('Arial', '', 12)
+
+        # Add footer text
 
 
 def normalize(text):
     return unicodedata.normalize("NFKD", text.casefold())
 
+def str_check(str=''):
+    for char in [' ', '/', '-']:
+        if char in str:
+            str = str.replace(char, '_')
+    return str
 
 class Scout(object):
     """Summary
@@ -30,16 +76,14 @@ class Scout(object):
         for key, value in d.items():
             # Case-normalize key/value pairs, simulataneously replacing spaces
             # dashes and slashes with underscores.
-            key = normalize(self.__attr_check__(text=key))
+            key = normalize(str_check(key))
             # value = self.__normalize__(value)
 
-            # Update dictionary with the normalized key/value pairs
+            # Update instance attributes with the normalized key/value pairs
             if isinstance(value, (list, tuple)):
-                setattr(self, key, [obj(x) if isinstance(
-                    x, dict) else x for x in value])
+                setattr(self, key, [obj(x) if isinstance(x, dict) else x for x in value])
             else:
-                setattr(self, key, obj(value) if isinstance(
-                    value, dict) else value)
+                setattr(self, key, obj(value) if isinstance(value, dict) else value)
 
         self.naam = self.__name__()
         self.leeftijd = self.__calc_age__()
@@ -51,12 +95,6 @@ class Scout(object):
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
-
-    def __attr_check__(self, text=''):
-        for ch in [' ', '/', '-']:
-            if ch in text:
-                text = text.replace(ch, '_')
-        return text
 
     def __calc_age__(self, refdate=date.today()):
         """Summary
@@ -90,25 +128,61 @@ class Scout(object):
         else:
             return '{} {} {}'.format(self.lid_voornaam, self.lid_tussenvoegsel, self.lid_achternaam)
 
-    def algemeen(self):
-        print('===== ALGEMEEN =====')
-        print('Naam:\t\t\t{}'.format(self.naam))
-        print('Voorletters:\t\t{}'.format(self.lid_initialen))
-        print('Adres:\t\t\t{}'.format(self.lid_adres))
-        print('Postcode, plaats:\t{}, {}'.format(self.lid_postcode, self.lid_plaats))
-        print('Geboortedatum:\t\t{}'.format(self.lid_geboortedatum))
-        print('Leeftijd:\t\t{}'.format(self.leeftijd,))
-        print('Leeftijd overvliegen:\t{}'.format(self.m_leeftijd))
 
-    def contact(self):
-        print('===== CONTACT INFORMATIE =====')
-        print('Ouder/verzorger 1:\t{}'.format(self.lid_naam_ouder_verzorger_1))
-        print('Telefoonnumer:\t\t{}'.format(self.lid_telefoonnummer_ouder_verzorger_1))
-        print('Mailadres:\t\t{}'.format(self.lid_mailadres_ouder_verzorger_1))
-        print('')
-        print('Ouder/verzorger 2:\t{}'.format(self.lid_naam_ouder_verzorger_2))
-        print('Telefoonnumer:\t\t{}'.format(self.lid_telefoonnummer_ouder_verzorger_2))
-        print('Mailadres:\t\t{}'.format(self.lid_mailadres_ouder_verzorger_2))
+    def parent_form(self):
+        # Instantiation of PDF output
+        self.pdf = PDF()
+        self.pdf.set_margins(left=15.0, top=25.0)
+        self.pdf.alias_nb_pages()
+        self.pdf.add_page()
+        self.add_font('Arial','','arial.ttf', uni=True)
+        self.pdf.set_font('Arial', '', 11)
+        
+        cur_y = self.pdf.get_y()
+        self.algemeen()
+        self.pdf.set_y(cur_y)
+        self.contact(offset_x=95)
+
+        # Print pdf output
+        self.pdf.output(os.path.join('{}.pdf'.format(self.naam)), 'F')
+
+    def str2pdf(self, item):
+        if item[0] == '':
+            self.pdf.cell(w=85, h=6, txt='', ln=1, align='L')
+        else:
+            self.pdf.cell(w=37, h=6, txt=str(item[0]), ln=0, align='L')
+            self.pdf.cell(w=48, h=6, txt=str(getattr(self, item[1])), ln=1, align='L')
+
+    def algemeen(self, offset_x=0):
+        items = [
+            ('Naam', 'naam'),
+            ('Voorletters', 'lid_initialen'),
+            ('Adres', 'lid_adres'),
+            ('Postcode', 'lid_postcode'),
+            ('Plaats', 'lid_plaats'),
+            ('Geboortedatum', 'lid_geboortedatum'),
+            ('Leeftijd', 'leeftijd')
+        ]
+
+        self.pdf.cell(w=85, h=8, txt='ALGEMENE INFORMATIE', ln=1, align='C')
+        for item in items:
+            self.str2pdf(item)
+
+    def contact(self, offset_x=0):
+        items = [
+            ('Ouder/verzorger 1', 'lid_naam_ouder_verzorger_1'),
+            ('Telefoonnumer', 'lid_telefoonnummer_ouder_verzorger_1'),
+            ('Mailadres', 'lid_e_mailadres_ouder_verzorger_1'),
+            ('', ''),
+            ('Ouder/verzorger 2', 'lid_naam_ouder_verzorger_2'),
+            ('Telefoonnumer', 'lid_telefoonnummer_ouder_verzorger_2'),
+            ('Mailadres', 'lid_e_mailadres_ouder_verzorger_2')
+        ]
+        self.pdf.set_x(self.pdf.get_x() + offset_x)
+        self.pdf.cell(w=100, h=6, txt='CONTACT INFORMATIE', ln=1, align='C')
+        for item in items:
+            self.pdf.set_x(self.pdf.get_x() + offset_x)
+            self.str2pdf(item)
 
     def overige_info(self):
         print('===== OVERIGE INFORMATIE =====')

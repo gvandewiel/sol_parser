@@ -7,7 +7,7 @@ adding the named keyword argument 'output_dir' to the Nota class.
 import sys, os
 from optparse import OptionParser
 from configparser import ConfigParser
-from sol_parser.parser import Parser
+from sol_parser.parser import ScoutsCollection
 from sol_parser.contribution import Nota
 # from sol_parser.membership import Members
 
@@ -72,22 +72,28 @@ def main(args=None):
         contributie[k] = float(v)
     
     # Parse SOL export file
-    scouts_list = Parser(infile)
-    season_start = scouts_list.season_start
-    season_end = scouts_list.season_end
+    members = ScoutsCollection()
+    members(infile)
+    season_start = members.season_start
+    season_end = members.season_end
 
+    for member in members:
+        member.parent_form()
+    quit()
     # Create list
-    # print(scouts_list)
-    # Members(scouts_list).generate_list(speltak='scouts')
+    # print(members)
+    # Members(members).generate_list(speltak='scouts')
 
     # Retrieve all members grouped by adres
-    adres_list = scouts_list.group_by_adres()
+    adres_list = members.group_by_adres()
     
     # Loop over adres list
     html_file = open(outpath, "w")
     with Nota(ss=season_start, se=season_end, cd=contributie, hf=html_file, od=outdir) as brief:
         for adres, alist in adres_list.items():
             brief.create_nota(adres, alist)
+
+    html_file.close()
 
 if __name__ == '__main__':
     main()
