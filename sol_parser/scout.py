@@ -132,11 +132,11 @@ class Scout(object):
     def parent_form(self):
         # Instantiation of PDF output
         self.pdf = PDF()
-        self.pdf.set_margins(left=15.0, top=25.0)
+        self.pdf.set_margins(left=10.0, top=25.0)
         self.pdf.alias_nb_pages()
         self.pdf.add_page()
-        self.add_font('Arial','','arial.ttf', uni=True)
-        self.pdf.set_font('Arial', '', 11)
+        self.pdf.add_font('Arial','','arial.ttf', uni=True)
+        self.pdf.set_font('Arial', '', 10)
         
         cur_y = self.pdf.get_y()
         self.algemeen()
@@ -148,10 +148,10 @@ class Scout(object):
 
     def str2pdf(self, item):
         if item[0] == '':
-            self.pdf.cell(w=85, h=6, txt='', ln=1, align='L')
+            self.pdf.cell(w=95, h=6, txt='', ln=1, align='L', border=1)
         else:
-            self.pdf.cell(w=37, h=6, txt=str(item[0]), ln=0, align='L')
-            self.pdf.cell(w=48, h=6, txt=str(getattr(self, item[1])), ln=1, align='L')
+            self.pdf.cell(w=35, h=6, txt=str(item[0]), ln=0, align='L', border=1)
+            self.pdf.cell(w=60, h=6, txt=str(getattr(self, item[1])), ln=1, align='L', border=1)
 
     def algemeen(self, offset_x=0):
         items = [
@@ -164,7 +164,7 @@ class Scout(object):
             ('Leeftijd', 'leeftijd')
         ]
 
-        self.pdf.cell(w=85, h=8, txt='ALGEMENE INFORMATIE', ln=1, align='C')
+        self.pdf.cell(w=95, h=8, txt='ALGEMENE INFORMATIE', ln=1, align='C')
         for item in items:
             self.str2pdf(item)
 
@@ -179,7 +179,7 @@ class Scout(object):
             ('Mailadres', 'lid_e_mailadres_ouder_verzorger_2')
         ]
         self.pdf.set_x(self.pdf.get_x() + offset_x)
-        self.pdf.cell(w=100, h=6, txt='CONTACT INFORMATIE', ln=1, align='C')
+        self.pdf.cell(w=95, h=8, txt='CONTACT INFORMATIE', ln=1, align='C')
         for item in items:
             self.pdf.set_x(self.pdf.get_x() + offset_x)
             self.str2pdf(item)

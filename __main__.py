@@ -78,6 +78,7 @@ def main(args=None):
     season_end = members.season_end
 
     for member in members:
+        print(member.naam)
         member.parent_form()
     quit()
     # Create list
