@@ -5,7 +5,7 @@
 *.csv
 *.pdf
 @eaDir
-
+*.html
 
 ### macOS ###
 *.DS_Store
