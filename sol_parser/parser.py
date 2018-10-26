@@ -67,7 +67,7 @@ class ScoutsCollection():
                     # self.members.add(Scout(row, self.migration_date))
                     member = Scout(row)
                     
-                    member.migration_date = self.calc_migration_date()
+                    member.migration_date = self.migration_date()
                     member.season_start, member.season_end = self.season()
                     member.m_leeftijd = member.__calc_age__(refdate=member.migration_date)
                     
@@ -85,7 +85,7 @@ class ScoutsCollection():
         """
         return iter(self.objLeden)
 
-    def calc_migration_date(self):
+    def migration_date(self):
         """Summary.
 
         Returns:
@@ -96,14 +96,11 @@ class ScoutsCollection():
         if today.month >= 9 and today.day >= 1:
             # replace day and month for given values
             # Increases current year with 1
-            self.migration_date = today + \
-                relativedelta(day=1, month=9, years=1)
+            return today + relativedelta(day=1, month=9, years=1)
         else:
             # replace day and month for given values
             # Keeps the year equal to he current year
-            self.migration_date = today + relativedelta(day=1, month=9)
-
-        return self.migration_date
+            return today + relativedelta(day=1, month=9)
 
     def season(self):
         """Summary.
@@ -135,14 +132,6 @@ class ScoutsCollection():
                 count = count + 1
                 filtered[self.objLeden[y]['lidnummer']] = self.objLeden[y]
         return filtered, count
-
-    def list(self):
-        """Summary.
-
-        Returns:
-            TYPE: Description
-        """
-        return self.objLeden
 
     def group(self):
         ret = dict()

@@ -68,20 +68,14 @@ class Nota():
 
     iNotanumber = 0
 
-    def __init__(self,
-                 cd={},
-                 od='pdf',
-                 hf=''):
+    def __init__(self, cd={}, od='pdf', hf=''):
         """Initiation routine for class."""
         # Create output directory
         if not os.path.exists(od):
             os.makedirs(od)
 
-        # Class variables
-
-        self.html_file = hf
-
         # Instance variables
+        self.html_file = hf
         self.cd = cd
         self.output_dir = od
 
