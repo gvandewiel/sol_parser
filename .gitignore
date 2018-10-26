@@ -4,6 +4,8 @@
 ### Project files ###
 *.csv
 *.pdf
+@eaDir
+
 
 ### macOS ###
 *.DS_Store

@@ -45,7 +45,7 @@ class ScoutsCollection():
         objLeden (dict): Dictionary containig all members from csvfile
     """
 
-    def __init__(self):
+    def __init__(self, csvfile):
         """Initiate class
 
         Args:
@@ -56,8 +56,6 @@ class ScoutsCollection():
         self.season_start, self.season_end = self.season()
         # self.members = ScoutsCollection()
 
-
-    def __call__(self, csvfile):
         with open(csvfile) as csvfile:
             try:
                 reader = DictReader(csvfile)
@@ -88,14 +86,14 @@ class ScoutsCollection():
         if today.month >= 9 and today.day >= 1:
             # replace day and month for given values
             # Increases current year with 1
-            migration_date = today + \
+            self.migration_date = today + \
                 relativedelta(day=1, month=9, years=1)
         else:
             # replace day and month for given values
             # Keeps the year equal to he current year
-            migration_date = today + relativedelta(day=1, month=9)
+            self.migration_date = today + relativedelta(day=1, month=9)
 
-        return migration_date
+        return self.migration_date
 
     def season(self):
         """Summary.
@@ -135,6 +133,14 @@ class ScoutsCollection():
             TYPE: Description
         """
         return self.objLeden
+
+    def group(self):
+        ret = dict()
+        for a in self.addresses:
+            ret[a] = sorted(list(filter(lambda d: getattr(d, 'lid_adres') == a, self.objLeden)),
+                            key=lambda x: x.born,
+                            reverse=False)
+        return ret
 
     def group_by_adres(self, verbose=False):
         """Summary.

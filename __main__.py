@@ -9,6 +9,8 @@ from optparse import OptionParser
 from configparser import ConfigParser
 from sol_parser.parser import ScoutsCollection
 from sol_parser.contribution import Nota
+
+from pprint import pprint
 # from sol_parser.membership import Members
 
 
@@ -86,6 +88,7 @@ def main(args=None):
     # Members(members).generate_list(speltak='scouts')
 
     # Retrieve all members grouped by adres
+    pprint(members.group()
     adres_list = members.group_by_adres()
     
     # Loop over adres list
