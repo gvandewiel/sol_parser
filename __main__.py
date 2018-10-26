@@ -80,7 +80,6 @@ def main(args=None):
     
     contributie = dict()
     for k, v in reader.items('contributie'):
-        print('  {} = {}'.format(k, v))
         contributie[k] = float(v)
     
     # Parse SOL export file
@@ -88,6 +87,7 @@ def main(args=None):
 
     print('Creating ScoutsForm')
     for member in members:
+        print('\t{:35}'.format(member.naam), end='\r')
         member.form(od=outdir_form)
 
     adres_list = members.group()

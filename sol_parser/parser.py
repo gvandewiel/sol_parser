@@ -152,34 +152,3 @@ class ScoutsCollection():
                             reverse=False)
         return ret
 
-    def group_by_adres(self, verbose=False):
-        """Summary.
-
-        Args:
-            verbose (bool, optional): Description
-
-        Returns:
-            TYPE: Description
-        """
-        # Adres dictionary
-        adres = dict()
-        for scout in self:
-            # Check if adres is already in dictionary
-            if normalize(scout.lid_adres) not in adres:
-                # No adres exists; create new adres in dict and add scout
-                if verbose:
-                    print('Created new adres for {} ({})'.format(scout.naam, scout.functie))
-                adres[normalize(scout.lid_adres)] = [scout]
-            else:
-                # Adres exist; add scout to list
-                # A scout can occurs a multitude of times in the list due to different functions
-                if verbose:
-                    print('\tAdded {} ({}) to {}'.format(scout.naam, scout.functie, normalize(scout.lid_adres)))
-                adres[normalize(scout.lid_adres)].append(scout)
-
-        # Sort each list in adres based on age (youngest first)
-        for key, value in adres.items():
-            slist = sorted(value, key=lambda x: x.born, reverse=False)
-            adres[key] = slist
-
-        return adres

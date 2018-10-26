@@ -21,7 +21,8 @@ class PDF(FPDF):
         data_path = os.path.join(os.path.dirname(__file__),'resources')
         self.image(os.path.join(data_path, 'FL.jpg'), 25, 15, 33)
         self.image(os.path.join(data_path, 'Scouting.jpg'), 70, 20, 110)
-        # self.add_font('Arial','','arial.ttf', uni=True)
+        
+        self.add_font('Arial','',os.path.join('sol_parser','resources','arial.ttf'), uni=True)
         self.set_font('Arial', 'B', 15)
         # Move "cursor" down
         self.cell(w=0, h=15, ln=1)
@@ -40,7 +41,7 @@ class PDF(FPDF):
         self.set_y(-125)
 
         # Set font size
-        # self.add_font('Arial','','arial.ttf', uni=True)
+        #self.add_font('Arial','','arial.ttf', uni=True)
         self.set_font('Arial', '', 12)
 
         # Add footer text
@@ -133,7 +134,8 @@ class Scout(object):
         self.pdf.set_margins(left=10.0, top=25.0)
         self.pdf.alias_nb_pages()
         self.pdf.add_page()
-        # self.pdf.add_font('Arial', '', 'arial.ttf', uni=True)
+        
+        #self.pdf.add_font('Arial', '', 'arial.ttf', uni=True)
         self.pdf.set_font('Arial', '', 10)
         
         self.algemeen()
@@ -146,10 +148,10 @@ class Scout(object):
 
     def str2pdf(self, item):
         if item[0] == '':
-            self.pdf.cell(w=0, h=6, txt='', ln=1, align='L', border=1)
+            self.pdf.cell(w=0, h=6, txt='', ln=1, align='L')
         else:
-            self.pdf.cell(w=40, h=6, txt=str(item[0]), ln=0, align='L', border=1)
-            self.pdf.cell(w=0, h=6, txt=str(getattr(self, item[1])), ln=1, align='L', border=1)
+            self.pdf.cell(w=40, h=6, txt=str(item[0]), ln=0, align='L')
+            self.pdf.cell(w=0, h=6, txt=str(getattr(self, item[1])), ln=1, align='L')
 
     def algemeen(self, offset_x=0):
         items = [
@@ -209,3 +211,4 @@ class Scout(object):
             print('Opmerkingen:\t\t{}'.format(info[4]))
         except:
             print('Opmerkingen:\t\t{}'.format('-?-'))
+
