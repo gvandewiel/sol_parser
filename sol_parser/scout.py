@@ -21,7 +21,7 @@ class PDF(FPDF):
         data_path = os.path.join(os.path.dirname(__file__),'resources')
         self.image(os.path.join(data_path, 'FL.jpg'), 25, 15, 33)
         self.image(os.path.join(data_path, 'Scouting.jpg'), 70, 20, 110)
-        self.add_font('Arial','','arial.ttf', uni=True)
+        # self.add_font('Arial','','arial.ttf', uni=True)
         self.set_font('Arial', 'B', 15)
         # Move "cursor" down
         self.cell(w=0, h=15, ln=1)
@@ -40,7 +40,7 @@ class PDF(FPDF):
         self.set_y(-125)
 
         # Set font size
-        self.add_font('Arial','','arial.ttf', uni=True)
+        # self.add_font('Arial','','arial.ttf', uni=True)
         self.set_font('Arial', '', 12)
 
         # Add footer text
@@ -65,14 +65,13 @@ class Scout(object):
         naam (TYPE): Description
     """
 
-    def __init__(self, d, date):
+    def __init__(self, d):
         """Summary
 
         Args:
             d (TYPE): Description
             date (TYPE): Description
         """
-        self.migration_date = date
         for key, value in d.items():
             # Case-normalize key/value pairs, simulataneously replacing spaces
             # dashes and slashes with underscores.
@@ -87,7 +86,7 @@ class Scout(object):
 
         self.naam = self.__name__()
         self.leeftijd = self.__calc_age__()
-        self.m_leeftijd = self.__calc_age__(refdate=self.migration_date)
+        # self.m_leeftijd = self.__calc_age__(refdate=self.migration_date)
 
     def __repr__(self):
         return '{:<20}{:>3}'.format(self.naam, self.leeftijd)
@@ -128,30 +127,29 @@ class Scout(object):
         else:
             return '{} {} {}'.format(self.lid_voornaam, self.lid_tussenvoegsel, self.lid_achternaam)
 
-
-    def parent_form(self):
+    def form(self, od=''):
         # Instantiation of PDF output
         self.pdf = PDF()
         self.pdf.set_margins(left=10.0, top=25.0)
         self.pdf.alias_nb_pages()
         self.pdf.add_page()
-        self.pdf.add_font('Arial','','arial.ttf', uni=True)
+        # self.pdf.add_font('Arial', '', 'arial.ttf', uni=True)
         self.pdf.set_font('Arial', '', 10)
         
-        cur_y = self.pdf.get_y()
         self.algemeen()
-        self.pdf.set_y(cur_y)
-        self.contact(offset_x=95)
+        self.contact()
 
         # Print pdf output
-        self.pdf.output(os.path.join('{}.pdf'.format(self.naam)), 'F')
+        if not os.path.exists(od):
+            os.makedirs(od)
+        self.pdf.output(os.path.join(od, '{}.pdf'.format(self.naam)), 'F')
 
     def str2pdf(self, item):
         if item[0] == '':
-            self.pdf.cell(w=95, h=6, txt='', ln=1, align='L', border=1)
+            self.pdf.cell(w=0, h=6, txt='', ln=1, align='L', border=1)
         else:
-            self.pdf.cell(w=35, h=6, txt=str(item[0]), ln=0, align='L', border=1)
-            self.pdf.cell(w=60, h=6, txt=str(getattr(self, item[1])), ln=1, align='L', border=1)
+            self.pdf.cell(w=40, h=6, txt=str(item[0]), ln=0, align='L', border=1)
+            self.pdf.cell(w=0, h=6, txt=str(getattr(self, item[1])), ln=1, align='L', border=1)
 
     def algemeen(self, offset_x=0):
         items = [
@@ -164,7 +162,7 @@ class Scout(object):
             ('Leeftijd', 'leeftijd')
         ]
 
-        self.pdf.cell(w=95, h=8, txt='ALGEMENE INFORMATIE', ln=1, align='C')
+        self.pdf.cell(w=0, h=8, txt='ALGEMENE INFORMATIE', ln=1, align='C')
         for item in items:
             self.str2pdf(item)
 
@@ -179,7 +177,7 @@ class Scout(object):
             ('Mailadres', 'lid_e_mailadres_ouder_verzorger_2')
         ]
         self.pdf.set_x(self.pdf.get_x() + offset_x)
-        self.pdf.cell(w=95, h=8, txt='CONTACT INFORMATIE', ln=1, align='C')
+        self.pdf.cell(w=0, h=8, txt='CONTACT INFORMATIE', ln=1, align='C')
         for item in items:
             self.pdf.set_x(self.pdf.get_x() + offset_x)
             self.str2pdf(item)

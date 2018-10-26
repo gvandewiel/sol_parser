@@ -46,8 +46,8 @@ class PDF(FPDF):
     def footer(self):
         """PDF Footer."""
         # Global variables derived from Parser
-        season_start = Nota.season_start
-        season_end = Nota.season_end
+        season_start = self.ss
+        season_end = self.se
 
         # Position at 12.5 cm from bottom
         self.set_y(-125)
@@ -90,12 +90,8 @@ class Nota():
     """Creates contribution letter for each address."""
 
     iNotanumber = 0
-    season_start = ''
-    season_end = ''
 
     def __init__(self,
-                 ss='',
-                 se='',
                  cd={},
                  od='pdf',
                  hf=''):
@@ -105,14 +101,10 @@ class Nota():
             os.makedirs(od)
 
         # Class variables
-        type(self).season_start = ss
-        type(self).season_end = se
 
         self.html_file = hf
 
         # Instance variables
-        self.season_start = ss
-        self.season_end = se
         self.cd = cd
         self.output_dir = od
 
@@ -126,10 +118,10 @@ class Nota():
         """Exit routine for class."""
         self.html_file.write(self.html_stop())
 
-    def create_nota(self, adres, alist):
+    def create(self, adres, members):
         # Instance variables
         self.adres = adres
-        self.alist = alist
+        self.members = members
 
         # Instantiation of PDF output
         self.pdf = PDF()
@@ -145,23 +137,27 @@ class Nota():
         self.t_contr = 0
 
         sub_table = ''
-        print('\n==============={:^25}==============='.format(self.adres.capitalize()))
-        for lid in self.alist:
+        for lid in self.members:
             if 'jeugdlid *' in normalize(lid.functie):
                 if not self.bjeugdlid:
                     self.bjeugdlid = True
                     type(self).iNotanumber += 1
 
-                    self.pdf.cell(w=100, h=6, txt='Nota voor de ouder(s)/verzorger(s) van:', ln=0, align='L')
-                    self.pdf.cell(w=40,  h=6, txt='Notanumber:', ln=0, align='L')
-                    self.pdf.cell(w=0,   h=6, txt='{}{}{:03}'.format(self.season_start,self.season_end, type(self).iNotanumber), ln=1, align='R')
-                    self.pdf.cell(w=0,   h=6, txt='', ln=1)
+                    self.pdf.cell(w=100, h=6, ln=0, align='L', txt='Nota voor de ouder(s)/verzorger(s) van:')
+                    self.pdf.cell(w=40, h=6, txt='Notanumber:', ln=0, align='L')
+                    self.pdf.cell(w=0, h=6, ln=1, align='R', txt='{}{}{:03}'.format(lid.season_start,
+                                                                                    lid.season_end,
+                                                                                    type(self).iNotanumber))
+                    self.pdf.ss = lid.season_start
+                    self.pdf.se = lid.season_end
+
+                    self.pdf.cell(w=0, h=6, txt='', ln=1)
 
                 # For members of speltak 'stam' different rates are
                 # applied when the have a second 'non-jeugdlid' function.
                 # An update of the speltak is applied for later use.
                 if 'stam' in normalize(lid.speleenheid):
-                    for chk in self.alist:
+                    for chk in self.members:
                         if normalize(chk.naam) == normalize(lid.naam) and 'jeugdlid' not in normalize(chk.functie):
                             lid.speleenheid = "stam_leiding"
 
@@ -183,8 +179,8 @@ class Nota():
                 print('{:<25}{:<20}{:>6.2f}'.format(lid.naam, lid.speleenheid, self.s_contr))
                 sub_table = sub_table + self.accordion_data(lid)
                 self.pdf.cell(w=100, h=6, txt=lid.naam, ln=0, align='L')
-                self.pdf.cell(w=40,  h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
-                self.pdf.cell(w=0,   h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
+                self.pdf.cell(w=40, h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
+                self.pdf.cell(w=0, h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
 
         if self.bjeugdlid:
             self.pdf.cell(w=0, h=0, border='T', ln=1)
@@ -201,8 +197,8 @@ class Nota():
             self.html_file.write(self.accordion_close())
 
             # Print pdf output
-            self.pdf.output(os.path.join(self.output_dir, '{}{}{:03} - {}.pdf'.format(self.season_start,
-                                                                                      self.season_end, type(self).iNotanumber, lid.lid_e_mailadres)), 'F')
+            self.pdf.output(os.path.join(self.output_dir, '{}{}{:03} - {}.pdf'.format(lid.season_start,
+                                                                                      lid.season_end, type(self).iNotanumber, lid.lid_e_mailadres)), 'F')
         else:
             pass
             # print('\t{: <25}{: <20}'.format(lid.naam, lid.speleenheid))
@@ -240,7 +236,7 @@ class Nota():
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
               </button>
-              <a class="navbar-brand" href="#">Contributielijst ''' + str(self.season_start) + ''' - ''' + str(self.season_end) + '''</a>
+              <a class="navbar-brand" href="#">Contributielijst</a>
             </div>
           </div>
         </nav>
@@ -311,7 +307,7 @@ class Nota():
                                     </div>
                                     <div id="collapse_{notanumber}" class="panel-collapse collapse" style="height: 0px;">
                                         <div class="panel-body">
-                '''.format(notanumber='{}{}{:03}'.format(self.season_start, self.season_end, type(self).iNotanumber),
+                '''.format(notanumber='{}{}{:03}'.format(lid.season_start, lid.season_end, type(self).iNotanumber),
                            address=lid.lid_adres,
                            lastname=lid.lid_achternaam,
                            contribution=self.t_contr,

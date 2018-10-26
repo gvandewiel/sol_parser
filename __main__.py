@@ -41,11 +41,18 @@ def main(args=None):
                       default='Overzicht_Contributie.html',
                       help="Filename of summary file")
 
-    parser.add_option("-d", "--out-dir",
+    parser.add_option("-d", "--out-dir-con",
                       action="store",
-                      dest="outdir",
+                      dest="outdir_con",
                       type="string",
                       default='Contributie PDF',
+                      help="Directory where the PDF files are stored")
+
+    parser.add_option("-f", "--out-dir-form",
+                      action="store",
+                      dest="outdir_form",
+                      type="string",
+                      default='Formulier PDF',
                       help="Directory where the PDF files are stored")
 
     (options, args) = parser.parse_args()
@@ -62,7 +69,10 @@ def main(args=None):
     outpath = os.path.join(application_path, options.outfile)
     
     # Output directory
-    outdir = os.path.join(application_path, options.outdir)
+    outdir_con = os.path.join(application_path, options.outdir_con)
+
+    # Output directory
+    outdir_form = os.path.join(application_path, options.outdir_form)
 
     # Read contributie file and create dict of values
     reader = ConfigParser()
@@ -74,28 +84,21 @@ def main(args=None):
         contributie[k] = float(v)
     
     # Parse SOL export file
-    members = ScoutsCollection()
-    members(infile)
-    season_start = members.season_start
-    season_end = members.season_end
+    members = ScoutsCollection(infile)
 
+    print('Creating ScoutsForm')
     for member in members:
-        print(member.naam)
-        member.parent_form()
-    quit()
-    # Create list
-    # print(members)
-    # Members(members).generate_list(speltak='scouts')
+        member.form(od=outdir_form)
 
-    # Retrieve all members grouped by adres
-    pprint(members.group()
-    adres_list = members.group_by_adres()
-    
+    adres_list = members.group()
+
     # Loop over adres list
+    print('Creating Contribution Letters')
     html_file = open(outpath, "w")
-    with Nota(ss=season_start, se=season_end, cd=contributie, hf=html_file, od=outdir) as brief:
-        for adres, alist in adres_list.items():
-            brief.create_nota(adres, alist)
+    
+    with Nota(cd=contributie, hf=html_file, od=outdir_con) as brief:
+        for address, address_members in adres_list.items():
+            brief.create(adres=address, members=address_members)
 
     html_file.close()
 

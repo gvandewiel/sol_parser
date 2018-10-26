@@ -51,10 +51,12 @@ class ScoutsCollection():
         Args:
             csvfile (TYPE): Input file to parse (csv format)
         """
+        self.addresses = set()
+        self.names = set()
         self.objLeden = list()
-        self.migration_date = self.migration_date()
-        self.season_start, self.season_end = self.season()
-        # self.members = ScoutsCollection()
+
+        # self.migration_date = self.migration_date()
+        # self.season_start, self.season_end = self.season()
 
         with open(csvfile) as csvfile:
             try:
@@ -63,7 +65,15 @@ class ScoutsCollection():
                 pprint(reader.fieldnames)
                 for row in reader:
                     # self.members.add(Scout(row, self.migration_date))
-                    self.objLeden.append(Scout(row, self.migration_date))
+                    member = Scout(row)
+                    
+                    member.migration_date = self.calc_migration_date()
+                    member.season_start, member.season_end = self.season()
+                    member.m_leeftijd = member.__calc_age__(refdate=member.migration_date)
+                    
+                    self.names.add(member.naam)
+                    self.addresses.add(member.lid_adres)
+                    self.objLeden.append(member)
             finally:
                 csvfile.close()
 
@@ -75,7 +85,7 @@ class ScoutsCollection():
         """
         return iter(self.objLeden)
 
-    def migration_date(self):
+    def calc_migration_date(self):
         """Summary.
 
         Returns:
