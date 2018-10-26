@@ -5,6 +5,7 @@
 *.csv
 *.pdf
 @eaDir
+*.html
 
 
 ### macOS ###
