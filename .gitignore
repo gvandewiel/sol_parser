@@ -6,6 +6,10 @@
 *.pdf
 @eaDir
 *.html
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8ac35e5ea8faf856b6681849c98fbb607d1217f8
 
 ### macOS ###
 *.DS_Store
