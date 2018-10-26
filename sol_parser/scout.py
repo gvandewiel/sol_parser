@@ -3,49 +3,8 @@
 from datetime import *
 from datetime import date
 import unicodedata
-from fpdf import FPDF
+from .output import PDF
 import os
-
-
-class PDF(FPDF):
-    """
-    PDF class based on fpdf.
-
-    Header contains fixed content
-    Footer conains dynamic content to present the correct dates / years
-    """
-
-    def header(self):
-        """PDF Header."""
-        # Logo
-        data_path = os.path.join(os.path.dirname(__file__),'resources')
-        self.image(os.path.join(data_path, 'FL.jpg'), 25, 15, 33)
-        self.image(os.path.join(data_path, 'Scouting.jpg'), 70, 20, 110)
-        
-        self.add_font('Arial','',os.path.join('sol_parser','resources','arial.ttf'), uni=True)
-        self.set_font('Arial', 'B', 15)
-        # Move "cursor" down
-        self.cell(w=0, h=15, ln=1)
-        # Title
-        self.cell(w=70, ln=0)
-        self.cell(w=80, h=20, txt='Don Garcia Moreno', border=0, ln=1, align='C')
-
-        self.set_font('Arial', style='', size=12)
-        self.cell(w=0, h=6, txt='', ln=1)
-        self.cell(w=0, h=6, txt='', ln=1)
-
-    def footer(self):
-        """PDF Footer."""
-        # Global variables derived from Parser
-        # Position at 12.5 cm from bottom
-        self.set_y(-125)
-
-        # Set font size
-        #self.add_font('Arial','','arial.ttf', uni=True)
-        self.set_font('Arial', '', 12)
-
-        # Add footer text
-
 
 def normalize(text):
     return unicodedata.normalize("NFKD", text.casefold())
@@ -136,7 +95,7 @@ class Scout(object):
         self.pdf.add_page()
         
         #self.pdf.add_font('Arial', '', 'arial.ttf', uni=True)
-        self.pdf.set_font('Arial', '', 10)
+        self.pdf.set_font('DejaVuSans', '', 12)
         
         self.algemeen()
         self.contact()
@@ -150,7 +109,7 @@ class Scout(object):
         if item[0] == '':
             self.pdf.cell(w=0, h=6, txt='', ln=1, align='L')
         else:
-            self.pdf.cell(w=40, h=6, txt=str(item[0]), ln=0, align='L')
+            self.pdf.cell(w=45, h=6, txt=str(item[0]), ln=0, align='L')
             self.pdf.cell(w=0, h=6, txt=str(getattr(self, item[1])), ln=1, align='L')
 
     def algemeen(self, offset_x=0):
@@ -163,8 +122,9 @@ class Scout(object):
             ('Geboortedatum', 'lid_geboortedatum'),
             ('Leeftijd', 'leeftijd')
         ]
-
+        self.pdf.set_font('DejaVuSans', 'B', 14)
         self.pdf.cell(w=0, h=8, txt='ALGEMENE INFORMATIE', ln=1, align='C')
+        self.pdf.set_font('DejaVuSans', '', 12)
         for item in items:
             self.str2pdf(item)
 
@@ -179,7 +139,9 @@ class Scout(object):
             ('Mailadres', 'lid_e_mailadres_ouder_verzorger_2')
         ]
         self.pdf.set_x(self.pdf.get_x() + offset_x)
+        self.pdf.set_font('DejaVuSans', 'B', 14)
         self.pdf.cell(w=0, h=8, txt='CONTACT INFORMATIE', ln=1, align='C')
+        self.pdf.set_font('DejaVuSans', '', 12)
         for item in items:
             self.pdf.set_x(self.pdf.get_x() + offset_x)
             self.str2pdf(item)

@@ -1,5 +1,5 @@
 # from ..contributie import contr_list
-from fpdf import FPDF
+from .output import PDF
 import os
 import unicodedata
 
@@ -12,36 +12,13 @@ def normalize(text):
     return unicodedata.normalize("NFKD", text.casefold())
 
 
-class PDF(FPDF):
+class PDF(PDF):
     """
     PDF class based on fpdf.
 
     Header contains fixed content
     Footer conains dynamic content to present the correct dates / years
     """
-
-    def header(self):
-        """PDF Header."""
-        # Logo
-        data_path = os.path.join(os.path.dirname(__file__),'resources')
-        self.image(os.path.join(data_path, 'FL.jpg'), 25, 15, 33)
-        self.image(os.path.join(data_path, 'Scouting.jpg'), 70, 20, 110)
-
-        self.set_font('Arial', 'B', 15)
-        # Move "cursor" down
-        self.cell(w=0, h=15, ln=1)
-        # Title
-        self.cell(w=70, ln=0)
-        self.cell(w=80, h=20, txt='Don Garcia Moreno', border=0, ln=1, align='C')
-
-        self.set_font('Arial', style='', size=12)
-        self.cell(w=0, h=6, txt='p/a J. van Brunschot', border=0, ln=0, align='L')
-        self.cell(w=0, h=6, txt='Rabobank IBAN: NL45RABO0133812006', border=0, ln=1, align='R')
-        self.cell(w=0, h=6, txt='Neereindseweg 32', border=0, ln=1, align='L')
-        self.cell(w=0, h=6, txt='5091 RD Oostelbeers', border=0, ln=1, align='L')
-        self.cell(w=0, h=6, txt='tel. 013-5143366', border=0, ln=1, align='L')
-        self.cell(w=0, h=6, txt='', ln=1)
-        self.cell(w=0, h=6, txt='', ln=1)
 
     def footer(self):
         """PDF Footer."""
@@ -53,14 +30,14 @@ class PDF(FPDF):
         self.set_y(-125)
 
         # Set font size
-        self.set_font('Arial', '', 12)
+        self.set_font('DejaVuSans', '', 12)
 
         # Add footer text
         self.multi_cell(w=0, h=6, align='L', 
                         txt='Gaarne bovenstaand bedrag overmaken op bankrekening nummer (IBAN):')
-        self.set_font('Arial', 'B', 12)
+        self.set_font('DejaVuSans', 'B', 12)
         self.multi_cell(w=0, h=6, align='C', txt='NL45RABO0133812006')
-        self.set_font('Arial', '', 12)
+        self.set_font('DejaVuSans', '', 12)
         self.multi_cell(w=0, h=6, align='C', txt='')
         self.multi_cell(w=0, h=6, align='L', 
                         txt='van bovengenoesme stichting onder vermelding van:')
@@ -68,7 +45,7 @@ class PDF(FPDF):
         self.multi_cell(w=0, h=6, align='C', 
                         txt='Contributie {} / {} en het notanummer.'.format(season_start, season_end))
         self.multi_cell(w=0, h=6, align='C', txt='\n')
-        self.set_font('Arial', '', 12)
+        self.set_font('DejaVuSans', '', 12)
         self.multi_cell(w=0,
                         h=6,
                         align='L',
