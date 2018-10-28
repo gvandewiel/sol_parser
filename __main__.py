@@ -4,21 +4,20 @@ Creates contribution letters in the default output folder 'pdf'
 within the project root. A different output folder can set by
 adding the named keyword argument 'output_dir' to the Nota class.
 """
-import sys, os
+import sys
+import os
 from optparse import OptionParser
 from configparser import ConfigParser
 from sol_parser.parser import ScoutsCollection
-from sol_parser.contribution import Nota
-
+from sol_parser.contribution import Contribution
 from pprint import pprint
 # from sol_parser.membership import Members
 
-
 def main(args=None):
     """Create adres dictionary which contains all members grouped on adres.
+    
     For each adres a contribution letter is generated
     """
-
     parser = OptionParser()
     parser.add_option("-i", "--in-file",
                       action="store",
@@ -45,14 +44,14 @@ def main(args=None):
                       action="store",
                       dest="outdir_con",
                       type="string",
-                      default='Contributie PDF',
+                      default='PDF Contributie',
                       help="Directory where the PDF files are stored")
 
     parser.add_option("-f", "--out-dir-form",
                       action="store",
                       dest="outdir_form",
                       type="string",
-                      default='Formulier PDF',
+                      default='PDF Formulier',
                       help="Directory where the PDF files are stored")
 
     (options, args) = parser.parse_args()
@@ -63,44 +62,64 @@ def main(args=None):
     infile = os.path.join(application_path, options.infile)
 
     # Contributie file
-    cont_file = os.path.join(application_path, options.contfile)
+    cf = os.path.join(application_path, options.contfile)
 
     # Summary file
-    outpath = os.path.join(application_path, options.outfile)
+    sf = os.path.join(application_path, options.outfile)
     
-    # Output directory
-    outdir_con = os.path.join(application_path, options.outdir_con)
+    # Output directory for contribution letters
+    odc = os.path.join(application_path, options.outdir_con)
 
-    # Output directory
-    outdir_form = os.path.join(application_path, options.outdir_form)
+    # Output directory for ScoutsForm
+    odf = os.path.join(application_path, options.outdir_form)
 
+    # Parse SOL export file
+    members = ScoutsCollection()
+    members(infile)
+
+    ScoutsForms(members, od=odf)
+    Contribution_Letter(members, cf=cf, sf=sf, od=odc)
+
+
+def ScoutsForms(members, od=''):
+    """Create ScoutsForm
+
+    Iterates over all members in a Scoutscollection
+
+    Args:
+        members (ScoutsCollection): Members read from csv file
+        od (string): output dirctory where to store the generated forms
+    """
+    print('Creating ScoutsForm')
+    for member in members:
+        print('\t{:35}'.format(member.naam))
+        member.form(od=od)
+
+
+def Contribution_Letter(members, cf='', sf='', od=''):
+    """Crate Contribution letter for each member
+
+    The members are grouped by address to account for
+    discount if an address has more than two members.
+
+    Args:
+        members (ScoutsCollection): Members read from csv file
+        cf (string): filename of contribution file (*.ini)
+        sf (string): filename for the summary file
+        od (string): output directory where to store the generated letters
+    """
     # Read contributie file and create dict of values
     reader = ConfigParser()
-    reader.read(cont_file)
+    reader.read(cf)
     
     contributie = dict()
     for k, v in reader.items('contributie'):
         contributie[k] = float(v)
-    
-    # Parse SOL export file
-    members = ScoutsCollection(infile)
-
-    print('Creating ScoutsForm')
-    for member in members:
-        print('\t{:35}'.format(member.naam), end='\r')
-        member.form(od=outdir_form)
-
-    adres_list = members.group()
 
     # Loop over adres list
     print('Creating Contribution Letters')
-    html_file = open(outpath, "w")
-    
-    with Nota(cd=contributie, hf=html_file, od=outdir_con) as brief:
-        for address, address_members in adres_list.items():
-            brief.create(adres=address, members=address_members)
-
-    html_file.close()
+    c = Contribution(cd=contributie, hf=sf, od=od)
+    c.create(members)
 
 if __name__ == '__main__':
     main()

@@ -1,5 +1,5 @@
 # from ..contributie import contr_list
-from .output import PDF
+from .output import PDF, Summary_Sheet
 import os
 import unicodedata
 
@@ -20,6 +20,9 @@ class PDF(PDF):
     Footer conains dynamic content to present the correct dates / years
     """
 
+    def __init__(self, member=None):
+        super().__init__(member=member)
+
     def footer(self):
         """PDF Footer."""
         # Global variables derived from Parser
@@ -33,16 +36,16 @@ class PDF(PDF):
         self.set_font('DejaVuSans', '', 12)
 
         # Add footer text
-        self.multi_cell(w=0, h=6, align='L', 
+        self.multi_cell(w=0, h=6, align='L',
                         txt='Gaarne bovenstaand bedrag overmaken op bankrekening nummer (IBAN):')
         self.set_font('DejaVuSans', 'B', 12)
         self.multi_cell(w=0, h=6, align='C', txt='NL45RABO0133812006')
         self.set_font('DejaVuSans', '', 12)
         self.multi_cell(w=0, h=6, align='C', txt='')
-        self.multi_cell(w=0, h=6, align='L', 
+        self.multi_cell(w=0, h=6, align='L',
                         txt='van bovengenoesme stichting onder vermelding van:')
         self.set_font('Arial', 'I', 12)
-        self.multi_cell(w=0, h=6, align='C', 
+        self.multi_cell(w=0, h=6, align='C',
                         txt='Contributie {} / {} en het notanummer.'.format(season_start, season_end))
         self.multi_cell(w=0, h=6, align='C', txt='\n')
         self.set_font('DejaVuSans', '', 12)
@@ -63,33 +66,56 @@ class PDF(PDF):
                             'Het derde en volgende lid/leden uit een gezin betaalt de helft van de normaal verschuldigde contributie.'
                         ))
 
-class Nota():
+
+class Contribution():
     """Creates contribution letter for each address."""
 
     iNotanumber = 0
 
     def __init__(self, cd={}, od='pdf', hf=''):
-        """Initiation routine for class."""
-        # Create output directory
+        """Initiation routine for class.
+
+        Args:
+            cd (dict): Dictionary with contribution values
+            od (string): output directory
+            hf (string): filename of html based summary file
+        """
         if not os.path.exists(od):
             os.makedirs(od)
 
         # Instance variables
-        self.html_file = hf
+        self.hf = hf
+        if self.hf != '':
+            self.sf = Summary_Sheet(hf, self)
         self.cd = cd
         self.output_dir = od
-
-        # start html output
-        self.html_file.write(self.html_start())
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         """Exit routine for class."""
-        self.html_file.write(self.html_stop())
+        if self.hf != '':
+            self.sf.html_stop()
 
-    def create(self, adres, members):
+    def create(self, members):
+        # Group members per address
+        adres_list = members.group(filter_list=members.addresses, key='lid_adres')
+        
+        adres_list = dict(sorted(adres_list.items()))
+
+        # start html output
+        if self.hf != '':
+            self.sf.html_start()
+
+        # Loop over each address and generate 1 letter per address
+        for a, am in adres_list.items():
+            self.create_single(adres=a, members=am)
+
+        if self.hf != '':
+            self.sf.html_stop
+
+    def create_single(self, adres, members):
         # Instance variables
         self.adres = adres
         self.members = members
@@ -99,7 +125,6 @@ class Nota():
         self.pdf.set_margins(left=25.0, top=25.0)
         self.pdf.alias_nb_pages()
         self.pdf.add_page()
-        self.pdf.set_font('Arial', '', 12)
 
         # Reset all variables
         self.bjeugdlid = False
@@ -107,13 +132,18 @@ class Nota():
         self.s_contr = 0
         self.t_contr = 0
 
-        sub_table = ''
+        ad = ''
         for lid in self.members:
             if 'jeugdlid *' in normalize(lid.functie):
+                # If the boolean value bjeuglid is False then no member on address is found
+                # that is required to pay contribution.
                 if not self.bjeugdlid:
+                    # First jeugdlid is found start output for Nota
+                    # and increase the integer NotaNumber
                     self.bjeugdlid = True
                     type(self).iNotanumber += 1
 
+                    # Start PDF output
                     self.pdf.cell(w=100, h=6, ln=0, align='L', txt='Nota voor de ouder(s)/verzorger(s) van:')
                     self.pdf.cell(w=40, h=6, txt='Notanumber:', ln=0, align='L')
                     self.pdf.cell(w=0, h=6, ln=1, align='R', txt='{}{}{:03}'.format(lid.season_start,
@@ -147,168 +177,38 @@ class Nota():
                     self.s_contr = 1.0 * self.cd[lid.speleenheid]
 
                 self.t_contr += self.s_contr
-                print('{:<25}{:<20}{:>6.2f}'.format(lid.naam, lid.speleenheid, self.s_contr))
-                sub_table = sub_table + self.accordion_data(lid)
+
+                print('{:<35}{:<20}{:>6.2f}'.format(lid.naam, lid.speleenheid, self.s_contr))
+                
+                if self.hf != '':
+                    ad = ad + self.sf.accordion_data(lid.naam, lid.speleenheid, self.s_contr)
+                
                 self.pdf.cell(w=100, h=6, txt=lid.naam, ln=0, align='L')
                 self.pdf.cell(w=40, h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
                 self.pdf.cell(w=0, h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
 
         if self.bjeugdlid:
+            # If boolean bjeugdlid is True finalize the output
             self.pdf.cell(w=0, h=0, border='T', ln=1)
-            self.pdf.set_font('Arial', 'B', 12)
+            self.pdf.font(style='B')
             self.pdf.cell(w=100, h=6, txt='', ln=0)
             self.pdf.cell(w=40, h=6, txt='Totaal', ln=0, align='L')
             self.pdf.cell(w=0, h=6, txt='{}'.format(self.t_contr), ln=1, align='R')
 
             # Start accordion table
-            self.html_file.write(self.accordion_start(lid))
-            # Add additional accordion data
-            self.html_file.write(sub_table)
+            if self.hf != '':
+                    self.sf.accordion_start(lid)
+
+            # Add accordion data
+            if self.hf != '':
+                    self.sf.write(ad)
+
             # Close accordion table
-            self.html_file.write(self.accordion_close())
+            if self.hf != '':
+                    self.sf.accordion_close()
 
             # Print pdf output
             self.pdf.output(os.path.join(self.output_dir, '{}{}{:03} - {}.pdf'.format(lid.season_start,
                                                                                       lid.season_end, type(self).iNotanumber, lid.lid_e_mailadres)), 'F')
         else:
             pass
-            # print('\t{: <25}{: <20}'.format(lid.naam, lid.speleenheid))
-
-    def html_start(self):
-        return '''
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title></title>
-        <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
-        <script src="http://code.jquery.com/jquery-1.11.0.min.js"></script>
-        <script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
-        <style>
-            body {
-                /* Margin bottom by footer height */
-                margin-bottom: 65px;
-                font-size: 13px;
-            }
-
-            body > .container {
-              padding: 65px 15px 0;
-            }
-        </style>
-    </head>
-    <body>
-        <!-- Fixed navbar -->
-        <nav class="navbar navbar-default navbar-fixed-top">
-          <div class="container">
-            <div class="navbar-header">
-              <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                <span class="sr-only">Toggle navigation</span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-                <span class="icon-bar"></span>
-              </button>
-              <a class="navbar-brand" href="#">Contributielijst</a>
-            </div>
-          </div>
-        </nav>
-
-        <div class="container">
-            <div class="row">
-                <div class="col-xs-12padding-0">
-                    <div class="panel-heading row collapsed">
-                        <div class="col-xs-3 col-sm-2">
-                            <span class="pull-left"><strong>Notanumber</strong></span>
-                        </div>
-                        <div class="col-xs-4 col-sm-3">
-                            <span class="pull-left"><strong>Adres</strong></span>
-                        </div>
-                        <div class="col-xs-4 col-sm-3">
-                            <span class="pull-left"><strong>Achternaam</strong></span>
-                        </div>
-                        <div class="col-xs-1 col-sm-1 text-nowrap">
-                            <div class="pull-right">
-                                <span><strong>Contributie</strong></span>
-                            </div>
-                        </div>
-                        <div class="hidden-xs col-sm-3">
-                            <span class="pull-left"><strong>E-mail</strong></span>
-                        </div>
-                    </div>
-                    <div class="panel-group" id="accordion">
-'''
-
-    def html_stop(self):
-        return '''
-                            </div> <!-- PANEL -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <footer class="footer navbar-fixed-bottom">
-            <div class="container">
-                <p class="text-muted" id="loader-icon" style="display:none;" ><strong>Loading data...</strong></p>
-            </div>
-        </footer>
-    </body>
-</html>
-'''
-
-    def accordion_start(self, lid):
-        return '''
-                                <div class="post panel panel-default margin-0" id="post_{notanumber}">
-                                    <div class="panel-heading row collapsed" data-toggle="collapse" data-parent="#accordion" data-target="#collapse_{notanumber}">
-                                        <div class="col-xs-3 col-sm-2">
-                                            <span class="pull-left">{notanumber}</span>
-                                        </div>
-                                        <div class="col-xs-4 col-sm-3">
-                                            <span class="pull-left">{address}</span>
-                                        </div>
-                                        <div class="col-xs-4 col-sm-3">
-                                            <span class="pull-left">{lastname}</span>
-                                        </div>
-                                        <div class="col-xs-1 col-sm-1 text-nowrap">
-                                            <div class="pull-right">
-                                                <span>{contribution}</span>
-                                            </div>
-                                        </div>
-                                        <div class="hidden-xs col-sm-3">
-                                            <span class="pull-left">{email}</span>
-                                        </div>
-                                    </div>
-                                    <div id="collapse_{notanumber}" class="panel-collapse collapse" style="height: 0px;">
-                                        <div class="panel-body">
-                '''.format(notanumber='{}{}{:03}'.format(lid.season_start, lid.season_end, type(self).iNotanumber),
-                           address=lid.lid_adres,
-                           lastname=lid.lid_achternaam,
-                           contribution=self.t_contr,
-                           email=lid.lid_e_mailadres)
-
-    def accordion_data(self, lid):
-        return '''
-                                            <div class="row">
-                                                <div class="col-sm-2">
-                                                </div>
-                                                <div class="col-sm-3">
-                                                    <span class="pull-left">{naam}</span>
-                                                </div>
-                                                <div class="col-sm-3">
-                                                    <span class="pull-left">{speleenheid}</span>
-                                                </div>
-                                                <div class="col-sm-1">
-                                                    <span class="pull-right">{s_contr}</span>
-                                                </div>
-                                                <div class="hidden-xs col-sm-3">
-                                                </div>
-                                            </div>
-
-        '''.format(naam=lid.naam,
-                   speleenheid=lid.speleenheid,
-                   s_contr=self.s_contr)
-
-    def accordion_close(self):
-        return '''
-                                        </div>
-                                    </div>
-                                </div>
-        '''

@@ -1,19 +1,11 @@
-"""Summary
-"""
-from datetime import *
-from datetime import date
-import unicodedata
-from .output import PDF
+"""Summary"""
 import os
+from datetime import datetime
+from datetime import date
+from pprint import pprint
+from .output import PDF
+from .common import normalize, str_check
 
-def normalize(text):
-    return unicodedata.normalize("NFKD", text.casefold())
-
-def str_check(str=''):
-    for char in [' ', '/', '-']:
-        if char in str:
-            str = str.replace(char, '_')
-    return str
 
 class Scout(object):
     """Summary
@@ -49,9 +41,11 @@ class Scout(object):
         # self.m_leeftijd = self.__calc_age__(refdate=self.migration_date)
 
     def __repr__(self):
+        """Print Scout"""
         return '{:<20}{:>3}'.format(self.naam, self.leeftijd)
 
     def __iter__(self):
+        """Iterater for Scouts attributes"""
         for attr, value in self.__dict__.items():
             yield attr, value
 
@@ -88,89 +82,78 @@ class Scout(object):
             return '{} {} {}'.format(self.lid_voornaam, self.lid_tussenvoegsel, self.lid_achternaam)
 
     def form(self, od=''):
-        # Instantiation of PDF output
-        self.pdf = PDF()
-        self.pdf.set_margins(left=10.0, top=25.0)
+        """Create ScoutsForm"""
+        self.pdf = PDF(self)
+        self.pdf.set_margins(left=15.0, right=15.0, top=25.0)
         self.pdf.alias_nb_pages()
         self.pdf.add_page()
+
+        self.pdf.f_title('Algemene Informatie')
+
+        self.pdf.f_line(('Naam', 'naam'))
+        self.pdf.f_line(('Voorletters', 'lid_initialen'))
+        self.pdf.f_line(('Adres', 'lid_adres'))
         
-        #self.pdf.add_font('Arial', '', 'arial.ttf', uni=True)
-        self.pdf.set_font('DejaVuSans', '', 12)
-        
-        self.algemeen()
-        self.contact()
+        self.pdf.f_line(('Postcode & Plaats', 'lid_postcode'), w=45, ln=0)
+        self.pdf.cell(w=0, h=6, txt=str(getattr(self, 'lid_plaats')), ln=1, align='L')
+
+        self.pdf.f_line(('Geboortedatum', 'lid_geboortedatum'), w=45, ln=0)
+        self.pdf.cell(w=0, h=6, txt='{:<3} op {}'.format(self.m_leeftijd, self.migration_date), ln=1, align='L')
+
+        self.pdf.f_title('Op welke manieren kunnen wij u bereiken:')
+
+        items = [
+            ('Wij krijgen we aan de lijn', 'lid_naam_ouder_verzorger_1'),
+            ('GSM Nummer 1', 'lid_telefoonnummer_ouder_verzorger_1'),
+            ('Mailadres', 'lid_e_mailadres_ouder_verzorger_1'),
+            ('', ''),
+            ('Wij krijgen we aan de lijn', 'lid_naam_ouder_verzorger_2'),
+            ('Telefoonnumer', 'lid_telefoonnummer_ouder_verzorger_2'),
+            ('Mailadres', 'lid_e_mailadres_ouder_verzorger_2')
+        ]
+
+        for item in items:
+            self.pdf.f_line(item)
+
+        self.pdf.f_title('Huisarts en verzekering')
+        self.pdf.font(style='I')
+        self.pdf.multi_cell(w=0, h=6, txt='Door het invullen van dit formulier geeft ons toestemming om een arts te bezoeken indien wij dit nodig achten. Heeft u hier problemen mee dit graag duidelijk aangeven op het formulier.', align='L')
+
+        items = [
+            ('Huisarts', ''),
+            ('Ziektekostenverzekering', 'lid_ziektekostenverzekeraar'),
+            ('Polisnummer', 'lid_ziektekostenpolis_nummer')
+        ]
+
+        for item in items:
+            self.pdf.f_line(item)
+
+        self.pdf.f_title('Overige Informatie')
+
+        info = self.overige_informatie.split('|')
+        if len(info) >= 5:
+                sp = info[0]
+                zd = info[1]
+                med = info[2]
+                al = info[3]
+                rem = info[4]
+        else:
+                sp = '-'
+                zd = '-'
+                med = '-'
+                al = '-'
+                rem = '-'
+
+        self.pdf.f_subtitle('Zwemdiploma\'s')
+        self.pdf.cell(w=0, h=6, txt=zd, ln=1, align='L')
+
+        self.pdf.f_title('Medicijnen & Allergieën')
+        self.pdf.multi_cell(w=0, h=6, txt='{}\n{}'.format(med.strip(), al.strip()), align='L')
+
+        self.pdf.f_title('Zijn er nog andere zaken over uw zoon/dochter die belangrijk zijn om te weten:')
+        self.pdf.multi_cell(w=0, h=6, txt='{}\n{}'.format(sp.strip(), rem.strip()), align='L')
 
         # Print pdf output
         if not os.path.exists(od):
             os.makedirs(od)
         self.pdf.output(os.path.join(od, '{}.pdf'.format(self.naam)), 'F')
-
-    def str2pdf(self, item):
-        if item[0] == '':
-            self.pdf.cell(w=0, h=6, txt='', ln=1, align='L')
-        else:
-            self.pdf.cell(w=45, h=6, txt=str(item[0]), ln=0, align='L')
-            self.pdf.cell(w=0, h=6, txt=str(getattr(self, item[1])), ln=1, align='L')
-
-    def algemeen(self, offset_x=0):
-        items = [
-            ('Naam', 'naam'),
-            ('Voorletters', 'lid_initialen'),
-            ('Adres', 'lid_adres'),
-            ('Postcode', 'lid_postcode'),
-            ('Plaats', 'lid_plaats'),
-            ('Geboortedatum', 'lid_geboortedatum'),
-            ('Leeftijd', 'leeftijd')
-        ]
-        self.pdf.set_font('DejaVuSans', 'B', 14)
-        self.pdf.cell(w=0, h=8, txt='ALGEMENE INFORMATIE', ln=1, align='C')
-        self.pdf.set_font('DejaVuSans', '', 12)
-        for item in items:
-            self.str2pdf(item)
-
-    def contact(self, offset_x=0):
-        items = [
-            ('Ouder/verzorger 1', 'lid_naam_ouder_verzorger_1'),
-            ('Telefoonnumer', 'lid_telefoonnummer_ouder_verzorger_1'),
-            ('Mailadres', 'lid_e_mailadres_ouder_verzorger_1'),
-            ('', ''),
-            ('Ouder/verzorger 2', 'lid_naam_ouder_verzorger_2'),
-            ('Telefoonnumer', 'lid_telefoonnummer_ouder_verzorger_2'),
-            ('Mailadres', 'lid_e_mailadres_ouder_verzorger_2')
-        ]
-        self.pdf.set_x(self.pdf.get_x() + offset_x)
-        self.pdf.set_font('DejaVuSans', 'B', 14)
-        self.pdf.cell(w=0, h=8, txt='CONTACT INFORMATIE', ln=1, align='C')
-        self.pdf.set_font('DejaVuSans', '', 12)
-        for item in items:
-            self.pdf.set_x(self.pdf.get_x() + offset_x)
-            self.str2pdf(item)
-
-    def overige_info(self):
-        print('===== OVERIGE INFORMATIE =====')
-        info = self.Overige_informatie.split('|')
-        try:
-            print('\'avonds laten plassen:\t{}'.format(info[0]))
-        except:
-            print('\'avonds laten plassen:\t{}'.format('-?-'))
-
-        try:
-            print('Zwemdiploma\'s:\t\t{}'.format(info[1]))
-        except:
-            print('Zwemdiploma\'s:\t\t{}'.format('-?-'))
-
-        try:
-            print('Medicijnen:\t\t{}'.format(info[2]))
-        except:
-            print('Medicijnen:\t\t{}'.format('-?-'))
-
-        try:
-            print('Allergieen:\t\t{}'.format(info[3]))
-        except:
-            print('Allergieen:\t\t{}'.format('-?-'))
-
-        try:
-            print('Opmerkingen:\t\t{}'.format(info[4]))
-        except:
-            print('Opmerkingen:\t\t{}'.format('-?-'))
-
