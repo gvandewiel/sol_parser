@@ -12,7 +12,7 @@ def normalize(text):
     return unicodedata.normalize("NFKD", text.casefold())
 
 
-class PDF(PDF):
+class fPDF(PDF):
     """
     PDF class based on fpdf.
 
@@ -23,7 +23,7 @@ class PDF(PDF):
     def __init__(self, member=None):
         super().__init__(member=member)
 
-    def footer(self):
+    def footer2(self):
         """PDF Footer."""
         # Global variables derived from Parser
         season_start = self.ss
@@ -108,9 +108,32 @@ class Contribution():
         if self.hf != '':
             self.sf.html_start()
 
+        # start pdf output (summary)
+        self.spdf = PDF('L', 'mm', 'A4')
+        self.spdf.add_page()
+        self.spdf.set_y(55)
+        self.spdf.set_auto_page_break(False)
+        self.spdf.font(style='', size=9)
+
         # Loop over each address and generate 1 letter per address
         for a, am in adres_list.items():
+            if (self.spdf.h - self.spdf.get_y()) < (6 + 40 + (len(am) * 6)):
+                print('')
+                self.spdf.add_page()
+                self.spdf.set_y(55)
+
+            self.spdf.al = self.spdf.get_y()
+            self.spdf.font(style='B', size=9)
+            self.spdf.cell(w=0, h=6, txt=a, border='B', ln=1)
+            self.spdf.font(style='', size=9)
+
             self.create_single(adres=a, members=am)
+            self.spdf.cell(w=0, h=4, txt='', border='', ln=1)
+            self.spdf.set_y(self.spdf.ll)
+            yield a
+
+        # Print summary sheet to pdf
+        self.spdf.output('summary.pdf', 'F')
 
         if self.hf != '':
             self.sf.html_stop
@@ -120,20 +143,14 @@ class Contribution():
         self.adres = adres
         self.members = members
 
-        # Instantiation of PDF output
-        self.pdf = PDF()
-        self.pdf.set_margins(left=25.0, top=25.0)
-        self.pdf.alias_nb_pages()
-        self.pdf.add_page()
-
         # Reset all variables
         self.bjeugdlid = False
         self.cnt = 0
-        self.s_contr = 0
         self.t_contr = 0
 
         ad = ''
         for lid in self.members:
+            self.s_contr = 0
             if 'jeugdlid *' in normalize(lid.functie):
                 # If the boolean value bjeuglid is False then no member on address is found
                 # that is required to pay contribution.
@@ -143,16 +160,32 @@ class Contribution():
                     self.bjeugdlid = True
                     type(self).iNotanumber += 1
 
+                    # Instantiation of PDF output
+                    self.pdf = PDF()
+                    self.pdf.set_margins(left=25.0, top=25.0)
+                    self.pdf.alias_nb_pages()
+
+                    self.pdf.ss = lid.season_start
+                    self.pdf.se = lid.season_end
+                    
+                    self.pdf.add_page()
+                    
+                    # Title
+                    self.pdf.font(style='B', size=15)
+                    self.pdf.set_y(80)
+                    self.pdf.cell(w=0, h=8, txt='Contributie Don Garcia Moreno', ln=1, align='C')
+                    self.pdf.cell(w=0, h=8, txt='', ln=1)
+
                     # Start PDF output
-                    self.pdf.cell(w=100, h=6, ln=0, align='L', txt='Nota voor de ouder(s)/verzorger(s) van:')
+                    self.pdf.font(style='')
+                    self.pdf.set_x(100)
                     self.pdf.cell(w=40, h=6, txt='Notanumber:', ln=0, align='L')
                     self.pdf.cell(w=0, h=6, ln=1, align='R', txt='{}{}{:03}'.format(lid.season_start,
                                                                                     lid.season_end,
                                                                                     type(self).iNotanumber))
-                    self.pdf.ss = lid.season_start
-                    self.pdf.se = lid.season_end
 
-                    self.pdf.cell(w=0, h=6, txt='', ln=1)
+                    self.pdf.cell(w=0, h=8, txt='', ln=1)
+                    self.pdf.cell(w=100, h=6, ln=1, align='L', txt='Nota voor de ouder(s)/verzorger(s) van:')
 
                 # For members of speltak 'stam' different rates are
                 # applied when the have a second 'non-jeugdlid' function.
@@ -187,6 +220,23 @@ class Contribution():
                 self.pdf.cell(w=40, h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
                 self.pdf.cell(w=0, h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
 
+                # Print paying member in summary sheet
+                self.spdf.cell(w=75, h=6, txt=lid.naam, ln=0, align='L')
+                self.spdf.cell(w=70, h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
+                self.spdf.cell(w=30, h=6, txt=lid.functie.capitalize(), ln=0, align='L')
+                self.spdf.cell(w=0, h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
+                
+                self.spdf.ll = self.spdf.get_y()
+
+            else:
+                # Print non-paying member in summary sheet
+                self.spdf.cell(w=75, h=6, txt=lid.naam, ln=0, align='L')
+                self.spdf.cell(w=70, h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
+                self.spdf.cell(w=30, h=6, txt=lid.functie.capitalize(), ln=0, align='L')
+                self.spdf.cell(w=0, h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
+                
+                self.spdf.ll = self.spdf.get_y()
+
         if self.bjeugdlid:
             # If boolean bjeugdlid is True finalize the output
             self.pdf.cell(w=0, h=0, border='T', ln=1)
@@ -194,6 +244,20 @@ class Contribution():
             self.pdf.cell(w=100, h=6, txt='', ln=0)
             self.pdf.cell(w=40, h=6, txt='Totaal', ln=0, align='L')
             self.pdf.cell(w=0, h=6, txt='{}'.format(self.t_contr), ln=1, align='R')
+
+            # Print total contribution on adres line
+            self.spdf.font(style='B', size=9)
+            self.spdf.set_xy(25 + 75, self.spdf.al)
+            self.spdf.cell(w=70,
+                           h=6,
+                           border='B',
+                           txt='{}{}{:03}'.format(lid.season_start, lid.season_end, type(self).iNotanumber),
+                           align='L',
+                           ln=1)
+            
+            self.spdf.set_xy(140, self.spdf.al)
+            self.spdf.cell(w=0, h=6, border='B', txt='{}'.format(self.t_contr), align='R', ln=1)
+            self.spdf.font(style='', size=9)
 
             # Start accordion table
             if self.hf != '':
@@ -211,4 +275,8 @@ class Contribution():
             self.pdf.output(os.path.join(self.output_dir, '{}{}{:03} - {}.pdf'.format(lid.season_start,
                                                                                       lid.season_end, type(self).iNotanumber, lid.lid_e_mailadres)), 'F')
         else:
-            pass
+            # Print total contribution (=0) on adres line
+            self.spdf.font(style='B', size=9)
+            self.spdf.set_xy(140, self.spdf.al)
+            self.spdf.cell(w=0, h=6, border='B', txt='{}'.format(self.t_contr), align='R', ln=1)
+            self.spdf.font(style='', size=9)

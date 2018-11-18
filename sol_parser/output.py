@@ -6,31 +6,36 @@ import os
 class PDF(FPDF):
     """PDF class based on fpdf."""
 
-    def __init__(self, member=None):
+    def __init__(self, *args, **kwargs):
         """Subclassed FPDF class"""
-        super().__init__()
-        self.member = member
+        super().__init__(*args, **kwargs)
+        self.dp = os.path.join(os.path.dirname(__file__), 'resources')
+        self.fp = os.path.join('sol_parser', 'resources', 'fonts')
+
+        self.set_margins(left=25.0, top=25.0)
+        self.alias_nb_pages()
 
     def header(self):
         """PDF Header."""
         # Logo
-        data_path = os.path.join(os.path.dirname(__file__), 'resources')
-        font_path = os.path.join('sol_parser', 'resources', 'fonts')
+        self.image(os.path.join(self.dp, 'Scouting_NL_logo_RGB.jpg'), x=self.w - 38.1 - 25, y=12.6, w=38.1, h=35.7)
+        self.image(os.path.join(self.dp, 'Logo.png'), x=25, y=12.6, w=38.1, h=35.7)
+        self.add_font('DejaVuSans', '', os.path.join(self.fp, 'DejaVuSans.ttf'), uni=True)
+        self.add_font('DejaVuSans', 'B', os.path.join(self.fp, 'DejaVuSans-Bold.ttf'), uni=True)
+        self.add_font('DejaVuSans', 'I', os.path.join(self.fp, 'DejaVuSans-Oblique.ttf'), uni=True)
+        self.set_font('DejaVuSans', 'B', 11)
 
-        self.image(os.path.join(data_path, 'FL.jpg'), 25, 15, 33)
-        self.image(os.path.join(data_path, 'Scouting.jpg'), 70, 20, 110)
-        
-        self.add_font('DejaVuSans', '', os.path.join(font_path, 'DejaVuSans.ttf'), uni=True)
-        self.add_font('DejaVuSans', 'B', os.path.join(font_path, 'DejaVuSans-Bold.ttf'), uni=True)
-        self.add_font('DejaVuSans', 'I', os.path.join(font_path, 'DejaVuSans-Oblique.ttf'), uni=True)
-        self.set_font('DejaVuSans', 'B', 15)
-        
-        # Move "cursor" down
-        self.cell(w=0, h=15, ln=1)
-        
-        # Title
-        self.cell(w=70, ln=0)
-        self.cell(w=80, h=20, txt='Don Garcia Moreno', border=0, ln=1, align='C')
+    def footer(self):
+        """PDF Footer."""
+        self.image(os.path.join(self.dp, 'SN_Blad_small.jpg'), x=0, y=self.h - 38.2, w=self.w, h=38.2)
+
+        self.font(size=9)
+        self.set_y(-30)
+        self.cell(w=0, h=5, ln=1, align='C', txt='Scouting Don Garcia Moreno - Konijnenberg 2 - 5091 TS Oost West en Middelbeers')
+        self.cell(w=0, h=5, ln=1, align='C', txt='Postadres Antoniusstraat 36 - 5091 BB - Oost West en Middelbeers')
+        self.cell(w=0, h=5, ln=1, align='C', txt='tel +31 (0)13 514 17 66 - e-mail contributie@scoutingdongarciamoreno.nl - web www.scoutingdongarciamoreno.nl')
+        self.cell(w=0, h=5, ln=1, align='C', txt='Bank NL45RABO0133812006')
+        self.font()
 
     def font(self, fam='DejaVuSans', style='', size=11):
         """Set default font family, style and size"""
@@ -64,13 +69,6 @@ class PDF(FPDF):
                     self.cell(w=w, h=6, txt='?', ln=ln, align='L')
         else:
             raise AttributeError('Member not provided.')
-
-    def footer(self):
-        """PDF Footer."""
-        # Global variables derived from Parser
-        # Position at 12.5 cm from bottom
-        self.set_y(-125)
-        # Add footer text
 
 
 class Summary_Sheet():
