@@ -12,61 +12,6 @@ def normalize(text):
     return unicodedata.normalize("NFKD", text.casefold())
 
 
-class fPDF(PDF):
-    """
-    PDF class based on fpdf.
-
-    Header contains fixed content
-    Footer conains dynamic content to present the correct dates / years
-    """
-
-    def __init__(self, member=None):
-        super().__init__(member=member)
-
-    def footer2(self):
-        """PDF Footer."""
-        # Global variables derived from Parser
-        season_start = self.ss
-        season_end = self.se
-
-        # Position at 12.5 cm from bottom
-        self.set_y(-125)
-
-        # Set font size
-        self.set_font('DejaVuSans', '', 12)
-
-        # Add footer text
-        self.multi_cell(w=0, h=6, align='L',
-                        txt='Gaarne bovenstaand bedrag overmaken op bankrekening nummer (IBAN):')
-        self.set_font('DejaVuSans', 'B', 12)
-        self.multi_cell(w=0, h=6, align='C', txt='NL45RABO0133812006')
-        self.set_font('DejaVuSans', '', 12)
-        self.multi_cell(w=0, h=6, align='C', txt='')
-        self.multi_cell(w=0, h=6, align='L',
-                        txt='van bovengenoesme stichting onder vermelding van:')
-        self.set_font('Arial', 'I', 12)
-        self.multi_cell(w=0, h=6, align='C',
-                        txt='Contributie {} / {} en het notanummer.'.format(season_start, season_end))
-        self.multi_cell(w=0, h=6, align='C', txt='\n')
-        self.set_font('DejaVuSans', '', 12)
-        self.multi_cell(w=0,
-                        h=6,
-                        align='L',
-                        txt=(
-                            'Het bedrag mag in twee termijnen worden voldaan, het eerste voor 1 februari ' +
-                            str(season_end) + ', het tweede voor 1 april ' + str(season_end) + '.'
-                            'Voor de tweede termijn krijgt u geen herinnering.\n'
-                            '\n'
-                            '\n'
-                            'Nov ' + str(season_start) + ',\n'
-                            'Namens de scouting\n'
-                            'A. Vroegh, Penningmeester\n'
-                            'Tel.: 013-514-1766\n'
-                            '\n'
-                            'Het derde en volgende lid/leden uit een gezin betaalt de helft van de normaal verschuldigde contributie.'
-                        ))
-
-
 class Contribution():
     """Creates contribution letter for each address."""
 
@@ -88,6 +33,10 @@ class Contribution():
         if self.hf != '':
             self.sf = Summary_Sheet(hf, self)
         self.cd = cd
+        
+        # Check if additional cost are to be applied
+        self.sai = self.cd['adminstratiekosten'] == 0
+
         self.output_dir = od
 
     def __enter__(self):
@@ -116,9 +65,11 @@ class Contribution():
         self.spdf.font(style='', size=9)
 
         # Loop over each address and generate 1 letter per address
+        cnt = 0
+        tcnt = len(adres_list)
         for a, am in adres_list.items():
-            if (self.spdf.h - self.spdf.get_y()) < (6 + 40 + (len(am) * 6)):
-                print('')
+            cnt += 1
+            if (self.spdf.h - self.spdf.get_y()) < (6 + 40 + (len(am) * 6) + 6):
                 self.spdf.add_page()
                 self.spdf.set_y(55)
 
@@ -130,10 +81,10 @@ class Contribution():
             self.create_single(adres=a, members=am)
             self.spdf.cell(w=0, h=4, txt='', border='', ln=1)
             self.spdf.set_y(self.spdf.ll)
-            yield a
+            yield (cnt, tcnt)
 
         # Print summary sheet to pdf
-        self.spdf.output('summary.pdf', 'F')
+        self.spdf.output(os.path.join(self.output_dir, 'Samenvatting.pdf'), 'F')
 
         if self.hf != '':
             self.sf.html_stop
@@ -172,18 +123,19 @@ class Contribution():
                     
                     # Title
                     self.pdf.font(style='B', size=15)
-                    self.pdf.set_y(80)
+                    self.pdf.set_y(65)
                     self.pdf.cell(w=0, h=8, txt='Contributie Don Garcia Moreno', ln=1, align='C')
                     self.pdf.cell(w=0, h=8, txt='', ln=1)
 
                     # Start PDF output
                     self.pdf.font(style='')
                     self.pdf.set_x(100)
-                    self.pdf.cell(w=40, h=6, txt='Notanumber:', ln=0, align='L')
+                    self.pdf.font(style="B")
+                    self.pdf.cell(w=40, h=6, txt='Notanummer:', ln=0, align='L')
                     self.pdf.cell(w=0, h=6, ln=1, align='R', txt='{}{}{:03}'.format(lid.season_start,
                                                                                     lid.season_end,
                                                                                     type(self).iNotanumber))
-
+                    self.pdf.font()
                     self.pdf.cell(w=0, h=8, txt='', ln=1)
                     self.pdf.cell(w=100, h=6, ln=1, align='L', txt='Nota voor de ouder(s)/verzorger(s) van:')
 
@@ -218,13 +170,13 @@ class Contribution():
                 
                 self.pdf.cell(w=100, h=6, txt=lid.naam, ln=0, align='L')
                 self.pdf.cell(w=40, h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
-                self.pdf.cell(w=0, h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
+                self.pdf.cell(w=0, h=6, txt='{:.1f}'.format(self.s_contr), ln=1, align='R')
 
                 # Print paying member in summary sheet
                 self.spdf.cell(w=75, h=6, txt=lid.naam, ln=0, align='L')
                 self.spdf.cell(w=70, h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
                 self.spdf.cell(w=30, h=6, txt=lid.functie.capitalize(), ln=0, align='L')
-                self.spdf.cell(w=0, h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
+                self.spdf.cell(w=0, h=6, txt='{:.1f}'.format(self.s_contr), ln=1, align='R')
                 
                 self.spdf.ll = self.spdf.get_y()
 
@@ -233,17 +185,32 @@ class Contribution():
                 self.spdf.cell(w=75, h=6, txt=lid.naam, ln=0, align='L')
                 self.spdf.cell(w=70, h=6, txt=lid.speleenheid.capitalize(), ln=0, align='L')
                 self.spdf.cell(w=30, h=6, txt=lid.functie.capitalize(), ln=0, align='L')
-                self.spdf.cell(w=0, h=6, txt='{}'.format(self.s_contr), ln=1, align='R')
+                self.spdf.cell(w=0, h=6, txt='{:.1f}'.format(self.s_contr), ln=1, align='R')
                 
                 self.spdf.ll = self.spdf.get_y()
 
         if self.bjeugdlid:
+            # Apply additional costs
+            if not self.sai:
+                self.pdf.cell(w=100, h=6, txt='Adminstratiekosten', ln=0, align='L')
+                self.pdf.cell(w=40, h=6, txt='', ln=0, align='L')
+                self.pdf.cell(w=0, h=6, txt='{:.1f}'.format(self.cd['adminstratiekosten']), ln=1, align='R')
+                self.t_contr += self.cd['adminstratiekosten']
+
+                self.spdf.set_xy(25, self.spdf.ll)
+                self.spdf.cell(w=75, h=6, txt='Adminstratiekosten', ln=0, align='L')
+                self.spdf.cell(w=70, h=6, txt='', ln=0, align='L')
+                self.spdf.cell(w=30, h=6, txt='', ln=0, align='L')
+                self.spdf.cell(w=0, h=6, txt='{:.1f}'.format(self.cd['adminstratiekosten']), ln=1, align='R')
+                self.spdf.ll = self.spdf.get_y()
+
             # If boolean bjeugdlid is True finalize the output
             self.pdf.cell(w=0, h=0, border='T', ln=1)
             self.pdf.font(style='B')
             self.pdf.cell(w=100, h=6, txt='', ln=0)
             self.pdf.cell(w=40, h=6, txt='Totaal', ln=0, align='L')
             self.pdf.cell(w=0, h=6, txt='{}'.format(self.t_contr), ln=1, align='R')
+            self.pdf.font()
 
             # Print total contribution on adres line
             self.spdf.font(style='B', size=9)
@@ -253,10 +220,13 @@ class Contribution():
                            border='B',
                            txt='{}{}{:03}'.format(lid.season_start, lid.season_end, type(self).iNotanumber),
                            align='L',
-                           ln=1)
+                           ln=0)
             
-            self.spdf.set_xy(140, self.spdf.al)
-            self.spdf.cell(w=0, h=6, border='B', txt='{}'.format(self.t_contr), align='R', ln=1)
+            self.spdf.cell(w=0, h=6, border='B', txt=lid.lid_e_mailadres, align='L', ln=1)
+
+            self.spdf.set_xy(100, self.spdf.al)
+            print(self.t_contr)
+            self.spdf.cell(w=0, h=6, border='B', txt='{:.1f}'.format(self.t_contr), align='R', ln=1)
             self.spdf.font(style='', size=9)
 
             # Start accordion table
@@ -270,6 +240,9 @@ class Contribution():
             # Close accordion table
             if self.hf != '':
                     self.sf.accordion_close()
+
+            # Place nota notes
+            self.pdf.nota_end(sai=self.sai)
 
             # Print pdf output
             self.pdf.output(os.path.join(self.output_dir, '{}{}{:03} - {}.pdf'.format(lid.season_start,

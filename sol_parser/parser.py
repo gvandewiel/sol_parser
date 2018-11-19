@@ -55,7 +55,7 @@ class ScoutsCollection():
             try:
                 reader = DictReader(csvfile)
                 reader.fieldnames = [normalize(str_check(fn)) for fn in reader.fieldnames]
-                pprint(reader.fieldnames)
+                # pprint(reader.fieldnames)
                 for row in reader:
                     # self.members.add(Scout(row, self.migration_date))
                     member = Scout(row)
