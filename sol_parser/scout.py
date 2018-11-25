@@ -83,7 +83,7 @@ class Scout(object):
 
     def form(self, od=''):
         """Create ScoutsForm"""
-        self.pdf = PDF(self)
+        self.pdf = PDF(member=self)
         self.pdf.set_margins(left=15.0, right=15.0, top=25.0)
         self.pdf.alias_nb_pages()
         self.pdf.add_page()

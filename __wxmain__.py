@@ -4,9 +4,10 @@ from configparser import ConfigParser
 from sol_parser.parser import ScoutsCollection
 from sol_parser.contribution import Contribution
 import wx
+import wx.lib.scrolledpanel
 from pubsub import pub
 # from wx.lib.pubsub import pub
-
+from pprint import pprint
 import threading
 
 
@@ -32,34 +33,44 @@ class WorkerThread(threading.Thread):
         if self.action == 'cont':
             print('Creating Contribution Letters')
             c = Contribution(cd=self._notify_window.contributie, hf='', od=self._notify_window.odc)
-            a = c.create(self._notify_window.members)
+            a = c.create(self._notify_window.address_list)
+
             while True:
                 try:
                     _ret = next(a)
                     percent = int((_ret[0] / _ret[1]) * 100)
-                    wx.CallAfter(pub.sendMessage, "update", msg=percent)
+                    wx.CallAfter(pub.sendMessage, "update_cp", msg=percent)
                     
                     if self._want_abort:
-                        wx.CallAfter(pub.sendMessage, "update", msg=0)
+                        wx.CallAfter(pub.sendMessage, "update_cp", msg=0)
+                        wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
                         break
                 except StopIteration:
-                    wx.CallAfter(pub.sendMessage, "update", msg=0)
+                    wx.CallAfter(pub.sendMessage, "update_cp", msg=0)
                     self._notify_window.cont_btn.SetLabel("Contributie")
+                    wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
                     break
             return
 
         if self.action == 'form':
             cnt = 0
-            tcnt = len(self._notify_window.members)
+            tcnt = len(self._notify_window.members.members)
 
             for member in self._notify_window.members:
+                cnt += 1
+                print(member)
                 percent = int((cnt / tcnt) * 100)
                 member.form(od=self._notify_window.odf)
-                wx.CallAfter(pub.sendMessage, "update", msg=percent)
+                wx.CallAfter(pub.sendMessage, "update_fp", msg=percent)
 
                 if self._want_abort:
-                    wx.CallAfter(pub.sendMessage, "update", msg=0)
+                    wx.CallAfter(pub.sendMessage, "update_fp", msg=0)
                     self._notify_window.form_btn.SetLabel("ScoutsForm")
+                    wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
+            # Done
+            wx.CallAfter(pub.sendMessage, "update_fp", msg=0)
+            self._notify_window.form_btn.SetLabel("ScoutsForm")
+            wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
 
     def abort(self):
         """abort worker thread."""
@@ -72,11 +83,14 @@ class SolGUI(wx.Frame):
 
     def __init__(self, parent, title, app_path):
         """."""
-        super(SolGUI, self).__init__(parent, title=title)
-        
+        super(SolGUI, self).__init__(parent,
+                                     title=title,
+                                     size=(540, 240),
+                                     style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
         # create a pubsub listener
-        pub.subscribe(self.updateProgress, "update")
-
+        pub.subscribe(self.update_cp, "update_cp")
+        pub.subscribe(self.update_fp, "update_fp")
+        pub.subscribe(self.worker_done, "WorkerDone")
         self.worker = None
         self.app_path = app_path
         self.InitUI()
@@ -84,11 +98,16 @@ class SolGUI(wx.Frame):
 
         self.check_defaults()
 
-    def updateProgress(self, msg):
-        """
-        Update the progress bar
-        """
+    def worker_done(self, msg):
+        self.worker = None
+
+    def update_cp(self, msg):
+        """Update the progress bar."""
         self.cp.SetValue(msg)
+    
+    def update_fp(self, msg):
+        """Update the progress bar."""
+        self.fp.SetValue(msg)
 
     '''
     def InitMenu(self):
@@ -130,7 +149,7 @@ class SolGUI(wx.Frame):
     def InitUI(self):
         """."""
         self.panel = wx.Panel(self)
-        self.sizer = wx.GridBagSizer(8, 2)
+        self.sizer = wx.GridBagSizer(8, 3)
         
         # Read LedenExport file
         self.olf_btn = wx.Button(self.panel,
@@ -144,7 +163,7 @@ class SolGUI(wx.Frame):
                        border=0)
 
         self.lbl_1 = wx.TextCtrl(self.panel,
-                                 size=(230, 25))
+                                 size=(350, 25))
         self.sizer.Add(self.lbl_1,
                        pos=(1, 2),
                        span=(1, 1),
@@ -163,7 +182,7 @@ class SolGUI(wx.Frame):
                        border=0)
 
         self.lbl_2 = wx.TextCtrl(self.panel,
-                                 size=(230, 25))
+                                 size=(350, 25))
         self.sizer.Add(self.lbl_2,
                        pos=(2, 2),
                        span=(1, 1),
@@ -182,14 +201,13 @@ class SolGUI(wx.Frame):
                        flag=wx.TOP | wx.RIGHT,
                        border=0)
 
-        # Checkbox for automatic incasso
-        self.cb1 = wx.CheckBox(self.panel,
-                               label='Voeg administratie kosten toe',
-                               size=(230, 25))
-        self.sizer.Add(self.cb1,
+        # Progress bar
+        self.maxPercent = 100
+        self.cp = wx.Gauge(self.panel, range=100, size=(350, 25), style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
+        self.sizer.Add(self.cp,
                        pos=(3, 2),
                        span=(1, 1),
-                       flag=wx.TOP | wx.RIGHT,
+                       flag=wx.TOP | wx.LEFT | wx.BOTTOM,
                        border=0)
 
         # Generate ScoutForm
@@ -204,24 +222,24 @@ class SolGUI(wx.Frame):
                        flag=wx.TOP | wx.RIGHT,
                        border=0)
 
+        # Progress bar
+        self.maxPercent = 100
+        self.fp = wx.Gauge(self.panel, range=100, size=(350, 25), style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
+        self.sizer.Add(self.fp,
+                       pos=(4, 2),
+                       span=(1, 1),
+                       flag=wx.TOP | wx.LEFT | wx.BOTTOM,
+                       border=0)
+
         # Close button
         self.ok_btn = wx.Button(self.panel,
                                 label="Close",
                                 size=(160, 25))
         self.ok_btn.Bind(wx.EVT_BUTTON, self.onClose)
         self.sizer.Add(self.ok_btn,
-                       pos=(4, 2),
+                       pos=(5, 1),
                        span=(1, 1),
                        flag=wx.TOP | wx.RIGHT,
-                       border=0)
-
-        # Progress bar
-        self.maxPercent = 100
-        self.cp = wx.Gauge(self.panel, range=100, size=(390, 25), style=wx.GA_HORIZONTAL | wx.GA_SMOOTH)
-        self.sizer.Add(self.cp,
-                       pos=(5, 1),
-                       span=(1, 2),
-                       flag=wx.TOP | wx.LEFT | wx.BOTTOM,
                        border=0)
 
         # Footer
@@ -234,15 +252,16 @@ class SolGUI(wx.Frame):
                        flag=wx.TOP | wx.LEFT | wx.BOTTOM,
                        border=0)
 
-        self.panel.SetSizer(self.sizer)
-        self.sizer.Fit(self)
-
-    def update(self, percent):
-        self.cp.SetValue(percent)
+        #self.panel.SetSizer(self.sizer)
+        #self.sizer.Fit(self)
 
     def onClose(self, event):
         """"""
         self.Close()
+
+    def OpenWndw(self, event):
+        secondWindow = AdressGUI(parent=None, id=-1, title="Voeg administratie kosten toe")
+        secondWindow.Show()
 
     def onChecked(self, e): 
         cb = e.GetEventObject() 
@@ -385,11 +404,10 @@ class SolGUI(wx.Frame):
             sf (string): filename for the summary file
             od (string): output directory where to store the generated letters
         """
+
         if not self.worker:
-            # self.save_sum()
-            if not self.cb1.GetValue():
-                self.contributie['adminstratiekosten'] = 0
-                print(self.contributie)
+            AdressGUI(self).ShowModal()
+
             if self.save_cont_dir():
                 self.worker = WorkerThread(self, 'cont')
                 self.cont_btn.SetLabel("Abort")
@@ -397,6 +415,49 @@ class SolGUI(wx.Frame):
             self.worker.abort()
             self.worker = None
             self.cont_btn.SetLabel("Contributie")
+
+
+class AdressGUI(wx.Dialog):
+    def __init__(self, parent):
+        # Create a frame
+        wx.Frame.__init__(self, None, -1, "Voeg administratie kosten toe", size=(600, 200), style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
+
+        # Retrieve main window object
+        self.parent = parent
+        # Retrieve members from parent object
+        members = self.parent.members
+
+        # Group members per address
+        address_list = members.group(filter_list=members.addresses, key='lid_adres')
+        self.parent.address_list = dict(sorted(address_list.items()))
+
+        # Build dialog
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        panel1 = wx.Panel(self, size=(600, 50), pos=(0, 0), style=wx.SIMPLE_BORDER)
+        panel1.SetBackgroundColour('#FDDF99')
+
+        panel2 = wx.lib.scrolledpanel.ScrolledPanel(self, -1, size=(600, 130), pos=(0, 30), style=wx.SIMPLE_BORDER)
+        panel2.SetupScrolling()
+        panel2.SetBackgroundColour('#FFFFFF')
+        
+        self.ids = []
+        for lbl in self.parent.address_list:
+            self.add_cb(panel2, lbl)
+        panel2.SetSizer(self.sizer)
+
+    def add_cb(self, panel, obj):
+        # Checkbox for automatic incasso
+        self.cb = wx.CheckBox(panel,
+                              label=obj,
+                              size=(580, 25))
+        self.cb.Bind(wx.EVT_CHECKBOX, self.onChecked)
+        self.sizer.Add(self.cb)
+        self.ids.append(self.cb.GetId())
+
+    def onChecked(self, e):
+        cb = e.GetEventObject()
+        lbl = cb.GetLabel()
+        self.parent.address_list[lbl]['aac'] = cb.GetValue()
 
 
 def main():
@@ -411,3 +472,9 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+#if __name__ == '__main__':
+#    app = wx.App()
+#    frame = AdressGUI(parent=None, id=-1, title="Voeg administratie kosten toe")
+#    frame.Show()
+#    app.MainLoop()

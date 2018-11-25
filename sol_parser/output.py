@@ -15,7 +15,8 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 fpdf.FPDF_FONTPATH = resource_path(os.path.join('sol_parser', 'resources', 'fonts'))
-print(fpdf.FPDF_FONTPATH)
+fpdf.SYSTEM_TTFONTS = resource_path(os.path.join('sol_parser', 'resources', 'fonts'))
+print('FPDF_FONTPATH = {}'.format(fpdf.FPDF_FONTPATH))
 
 
 class PDF(fpdf.FPDF):
@@ -23,10 +24,10 @@ class PDF(fpdf.FPDF):
 
     def __init__(self, *args, **kwargs):
         """Subclassed FPDF class"""
-        super().__init__(*args, **kwargs)
+        self.member = kwargs.get('member', None)
+        super().__init__()
         self.dp = resource_path(os.path.join('sol_parser', 'resources'))
         self.fp = os.path.join(self.dp, 'fonts')
-
         self.set_margins(left=25.0, top=25.0, right=15.0)
         self.alias_nb_pages()
 
@@ -36,20 +37,21 @@ class PDF(fpdf.FPDF):
         self.image(os.path.join(self.dp, 'Scouting_NL_logo_RGB.jpg'), x=self.w - 38.1 - 25, y=12.6, w=38.1, h=35.7)
         self.image(os.path.join(self.dp, 'Logo.png'), x=25, y=12.6, w=38.1, h=35.7)
 
-        # self.add_font('DejaVuSans', '', os.path.join(self.fp, 'DejaVuSans.ttf'), uni=True)
-        # self.add_font('DejaVuSans', 'B', os.path.join(self.fp, 'DejaVuSans-Bold.ttf'), uni=True)
-        # self.add_font('DejaVuSans', 'I', os.path.join(self.fp, 'DejaVuSans-Oblique.ttf'), uni=True)
+        self.add_font('DejaVuSans', '', os.path.join(self.fp, 'DejaVuSans.ttf'), uni=True)
+        self.add_font('DejaVuSans', 'B', os.path.join(self.fp, 'DejaVuSans-Bold.ttf'), uni=True)
+        self.add_font('DejaVuSans', 'I', os.path.join(self.fp, 'DejaVuSans-Oblique.ttf'), uni=True)
         
-        self.set_font('Arial', 'B', 11)
+        self.set_font('DejaVuSans', 'B', 11)
+        self.set_y(55)
 
-    def nota_end(self, sai=True):
+    def nota_end(self, aac=True):
         self.set_y(-135)
 
         self.font()
         self.cell(w=0, h=6, align='L', ln=1, txt='Namens Stichting Scouting Middelbeers,')
         self.cell(w=0, h=6, align='L', ln=1, txt='D. Schima, Penningmeester')
         self.cell(w=0, h=6, align='L', ln=1, txt='')
-        if sai:
+        if not aac:
             self.multi_cell(w=0, h=6, align='L', txt='U hoeft geen verdere actie te ondernemen. Het bedrag wordt automatisch, middels automatisch incasso, in 2 delen van uw rekening afgeschreven.')
         else:
             self.cell(w=0, h=6, align='L', ln=1, txt='Gelieve het totaalbedrag voor 1 februari over te boeken op bankrekeningnummer:')
@@ -80,7 +82,7 @@ class PDF(fpdf.FPDF):
         self.cell(w=0, h=5, ln=1, align='C', txt='Bank NL45RABO0133812006')
         self.font()
 
-    def font(self, fam='Arial', style='', size=11):
+    def font(self, fam='DejaVuSans', style='', size=11):
         """Set default font family, style and size"""
         self.set_font(fam, style=style, size=size)
 

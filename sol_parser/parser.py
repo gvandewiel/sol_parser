@@ -142,7 +142,14 @@ class ScoutsCollection():
         """
         ret = dict()
         for i in filter_list:
-            ret[i] = sorted(list(filter(lambda d: getattr(d, key) == i, self.members)),
-                            key=lambda x: x.born,
-                            reverse=False)
+            _ret = dict()
+            _ret['members'] = sorted(list(filter(lambda d: getattr(d, key) == i, self.members)),
+                                     key=lambda x: x.born,
+                                     reverse=False)
+            _ret['aac'] = False
+
+            ret[i] = _ret
+            #ret[i] = sorted(list(filter(lambda d: getattr(d, key) == i, self.members)),
+            #                key=lambda x: x.born,
+            #                reverse=False)
         return ret
