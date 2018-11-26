@@ -6,6 +6,7 @@
 *.pdf
 @eaDir
 *.html
+*.pkl
 <<<<<<< HEAD
 =======
 

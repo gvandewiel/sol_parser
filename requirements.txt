@@ -1,0 +1,4 @@
+python-dateutil
+wxPython
+fpdf
+Pypubsub

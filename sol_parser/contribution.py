@@ -33,9 +33,6 @@ class Contribution():
         if self.hf != '':
             self.sf = Summary_Sheet(hf, self)
         self.cd = cd
-        
-        # Check if additional cost are to be applied
-        self.sai = self.cd['adminstratiekosten'] == 0
 
         self.output_dir = od
 
@@ -46,13 +43,15 @@ class Contribution():
         """Exit routine for class."""
         if self.hf != '':
             self.sf.html_stop()
-
+    '''
     def create(self, members):
         # Group members per address
-        adres_list = members.group(filter_list=members.addresses, key='lid_adres')
+        address_list = members.group(filter_list=members.addresses, key='lid_adres')
         
-        adres_list = dict(sorted(adres_list.items()))
+        address_list = dict(sorted(address_list.items()))
+    '''
 
+    def create(self, address_list):
         # start html output
         if self.hf != '':
             self.sf.html_start()
@@ -66,8 +65,10 @@ class Contribution():
 
         # Loop over each address and generate 1 letter per address
         cnt = 0
-        tcnt = len(adres_list)
-        for a, am in adres_list.items():
+        tcnt = len(address_list)
+        for a, d in address_list.items():
+            am = d['members']
+
             cnt += 1
             if (self.spdf.h - self.spdf.get_y()) < (6 + 40 + (len(am) * 6) + 6):
                 self.spdf.add_page()
@@ -78,7 +79,9 @@ class Contribution():
             self.spdf.cell(w=0, h=6, txt=a, border='B', ln=1)
             self.spdf.font(style='', size=9)
 
-            self.create_single(adres=a, members=am)
+            # Create new nota
+            self.create_single(adres=a, members=am, aac=d['aac'])
+
             self.spdf.cell(w=0, h=4, txt='', border='', ln=1)
             self.spdf.set_y(self.spdf.ll)
             yield (cnt, tcnt)
@@ -89,19 +92,19 @@ class Contribution():
         if self.hf != '':
             self.sf.html_stop
 
-    def create_single(self, adres, members):
+    def create_single(self, adres, members, aac):
         # Instance variables
         self.adres = adres
         self.members = members
 
         # Reset all variables
         self.bjeugdlid = False
-        self.cnt = 0
-        self.t_contr = 0
+        self.cnt = 0.
+        self.t_contr = 0.
 
         ad = ''
         for lid in self.members:
-            self.s_contr = 0
+            self.s_contr = 0.
             if 'jeugdlid *' in normalize(lid.functie):
                 # If the boolean value bjeuglid is False then no member on address is found
                 # that is required to pay contribution.
@@ -191,7 +194,7 @@ class Contribution():
 
         if self.bjeugdlid:
             # Apply additional costs
-            if not self.sai:
+            if aac:
                 self.pdf.cell(w=100, h=6, txt='Adminstratiekosten', ln=0, align='L')
                 self.pdf.cell(w=40, h=6, txt='', ln=0, align='L')
                 self.pdf.cell(w=0, h=6, txt='{:.1f}'.format(self.cd['adminstratiekosten']), ln=1, align='R')
@@ -242,7 +245,7 @@ class Contribution():
                     self.sf.accordion_close()
 
             # Place nota notes
-            self.pdf.nota_end(sai=self.sai)
+            self.pdf.nota_end(aac=aac)
 
             # Print pdf output
             self.pdf.output(os.path.join(self.output_dir, '{}{}{:03} - {}.pdf'.format(lid.season_start,
