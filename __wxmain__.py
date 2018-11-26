@@ -65,13 +65,13 @@ class WorkerThread(threading.Thread):
 
                 if self._want_abort:
                     wx.CallAfter(pub.sendMessage, "update_fp", msg=0)
-<<<<<<< HEAD
+                    
                     wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
                     break
-=======
+                    
                     self._notify_window.form_btn.SetLabel("ScoutsForm")
                     wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
->>>>>>> 8205f92a89fa8ba9d922b4c3cf7a4ee27e61833a
+                    
             # Done
             wx.CallAfter(pub.sendMessage, "update_fp", msg=0)
             self._notify_window.form_btn.SetLabel("ScoutsForm")
@@ -221,12 +221,6 @@ class SolGUI(wx.Frame):
                        flag=wx.TOP | wx.LEFT | wx.BOTTOM,
                        border=0)
 
-<<<<<<< HEAD
-=======
-        #self.panel.SetSizer(self.sizer)
-        #self.sizer.Fit(self)
-
->>>>>>> 8205f92a89fa8ba9d922b4c3cf7a4ee27e61833a
     def onClose(self, event):
         """"""
         self.Close()
@@ -234,13 +228,10 @@ class SolGUI(wx.Frame):
     def OpenWndw(self, event):
         secondWindow = AdressGUI(parent=None, id=-1, title="Voeg administratie kosten toe")
         secondWindow.Show()
-<<<<<<< HEAD
-=======
 
     def onChecked(self, e): 
         cb = e.GetEventObject() 
         print(cb.GetLabel(), ' is clicked', cb.GetValue())
->>>>>>> 8205f92a89fa8ba9d922b4c3cf7a4ee27e61833a
 
     def save_sum(self):
         dlg = wx.FileDialog(self.panel,
@@ -382,13 +373,10 @@ class SolGUI(wx.Frame):
         """
 
         if not self.worker:
-<<<<<<< HEAD
             wndw2 = AdressGUI(self)
             wndw2.ShowModal()
             wndw2.Destroy()
-=======
             AdressGUI(self).ShowModal()
->>>>>>> 8205f92a89fa8ba9d922b4c3cf7a4ee27e61833a
 
             if self.save_cont_dir():
                 self.worker = WorkerThread(self, 'cont')
@@ -408,17 +396,15 @@ class AdressGUI(wx.Dialog):
         self.parent = parent
         # Retrieve members from parent object
         members = self.parent.members
-
-<<<<<<< HEAD
+        
         from collections import OrderedDict
         # Group members per address
         address_list = members.group(filter_list=members.addresses, key='lid_adres')
         self.parent.address_list = OrderedDict(sorted(address_list.items()))
-=======
+        
         # Group members per address
         address_list = members.group(filter_list=members.addresses, key='lid_adres')
         self.parent.address_list = dict(sorted(address_list.items()))
->>>>>>> 8205f92a89fa8ba9d922b4c3cf7a4ee27e61833a
 
         # Build dialog
         self.sizer = wx.BoxSizer(wx.VERTICAL)
