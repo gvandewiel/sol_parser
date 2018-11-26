@@ -2,6 +2,7 @@
 import fpdf
 import os
 import sys
+from fpdf import FPDF_FONT_DIR, SYSTEM_TTFONTS
 
 
 def resource_path(relative_path):
@@ -14,6 +15,9 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
+FPDF_FONT_DIR = os.path.join(resource_path('sol_parser'), 'resources', 'fonts')
+SYSTEM_TTFONTS = os.path.join(resource_path('sol_parser'), 'resources', 'fonts')
+
 
 class PDF(fpdf.FPDF):
     """PDF class based on fpdf."""
@@ -22,6 +26,7 @@ class PDF(fpdf.FPDF):
         """Subclassed FPDF class"""
         self.member = kwargs.get('member', None)
         super().__init__()
+        
         # self.rp = os.path.dirname(os.path.realpath(__file__))
         self.rp = resource_path('sol_parser')
         self.dp = os.path.join(self.rp, 'resources')
