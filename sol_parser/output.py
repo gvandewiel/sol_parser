@@ -2,7 +2,7 @@
 import fpdf
 import os
 import sys
-from fpdf import FPDF_FONT_DIR, SYSTEM_TTFONTS
+from fpdf import FPDF_CACHE_MODE
 
 
 def resource_path(relative_path):
@@ -11,26 +11,24 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.path.abspath(".")
+        base_path = os.path.dirname(os.path.realpath(__file__))
 
     return os.path.join(base_path, relative_path)
 
-FPDF_FONT_DIR = os.path.join(resource_path('sol_parser'), 'resources', 'fonts')
-SYSTEM_TTFONTS = os.path.join(resource_path('sol_parser'), 'resources', 'fonts')
-
+FPDF_CACHE_MODE = 1
 
 class PDF(fpdf.FPDF):
     """PDF class based on fpdf."""
 
     def __init__(self, *args, **kwargs):
         """Subclassed FPDF class"""
-        self.member = kwargs.get('member', None)
-        super().__init__()
+        self.member = kwargs.pop('member', None)
+        super().__init__(*args, **kwargs)
         
         # self.rp = os.path.dirname(os.path.realpath(__file__))
-        self.rp = resource_path('sol_parser')
-        self.dp = os.path.join(self.rp, 'resources')
-        self.fp = os.path.join(self.rp, 'resources', 'fonts')
+        self.rp = resource_path('resources')
+        self.dp = self.rp
+        self.fp = os.path.join(self.rp, 'fonts')
 
         self.set_margins(left=25.0, top=25.0, right=15.0)
         self.alias_nb_pages()
@@ -40,8 +38,6 @@ class PDF(fpdf.FPDF):
         # Logo
         self.image(os.path.join(self.dp, 'Scouting_NL_logo_RGB.jpg'), x=self.w - 38.1 - 25, y=12.6, w=38.1, h=35.7)
         self.image(os.path.join(self.dp, 'Logo.png'), x=25, y=12.6, w=38.1, h=35.7)
-        print('Trying to add fonts:')
-        print(os.path.join(self.fp, 'DejaVuSans.ttf'))
         self.add_font('DejaVuSans', '', os.path.join(self.fp, 'DejaVuSans.ttf'), uni=True)
         self.add_font('DejaVuSans', 'B', os.path.join(self.fp, 'DejaVuSans-Bold.ttf'), uni=True)
         self.add_font('DejaVuSans', 'I', os.path.join(self.fp, 'DejaVuSans-Oblique.ttf'), uni=True)
