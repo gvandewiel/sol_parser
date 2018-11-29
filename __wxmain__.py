@@ -1,6 +1,7 @@
 import os
 import sys
 from configparser import ConfigParser
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 from sol_parser.parser import ScoutsCollection
 from sol_parser.contribution import Contribution
 import wx
@@ -43,12 +44,12 @@ class WorkerThread(threading.Thread):
                     
                     if self._want_abort:
                         wx.CallAfter(pub.sendMessage, "update_cp", msg=0)
-                        wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
+                        wx.CallAfter(pub.sendMessage, "WorkerDone", msg='cont')
                         break
                 except StopIteration:
                     wx.CallAfter(pub.sendMessage, "update_cp", msg=0)
                     self._notify_window.cont_btn.SetLabel("Contributie")
-                    wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
+                    wx.CallAfter(pub.sendMessage, "WorkerDone", msg='cont')
                     break
             return
 
@@ -66,16 +67,16 @@ class WorkerThread(threading.Thread):
                 if self._want_abort:
                     wx.CallAfter(pub.sendMessage, "update_fp", msg=0)
                     
-                    wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
+                    wx.CallAfter(pub.sendMessage, "WorkerDone", msg='form')
                     break
                     
                     self._notify_window.form_btn.SetLabel("ScoutsForm")
-                    wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
+                    wx.CallAfter(pub.sendMessage, "WorkerDone", msg='form')
                     
             # Done
             wx.CallAfter(pub.sendMessage, "update_fp", msg=0)
             self._notify_window.form_btn.SetLabel("ScoutsForm")
-            wx.CallAfter(pub.sendMessage, "WorkerDone", msg='')
+            wx.CallAfter(pub.sendMessage, "WorkerDone", msg='form')
 
     def abort(self):
         """abort worker thread."""
@@ -91,13 +92,13 @@ class SolGUI(wx.Frame):
         """."""
         super(SolGUI, self).__init__(parent,
                                      title=title,
-                                     size=(540, 240),
+                                     size=(555, 250),
                                      style=wx.DEFAULT_FRAME_STYLE ^ wx.RESIZE_BORDER)
         # create a pubsub listener
         pub.subscribe(self.update_cp, "update_cp")
         pub.subscribe(self.update_fp, "update_fp")
         pub.subscribe(self.worker_done, "WorkerDone")
-        self.worker = None
+        self.workers = {"form": None, "cont": None}
         self.app_path = app_path
         self.InitUI()
         self.Centre()
@@ -105,15 +106,17 @@ class SolGUI(wx.Frame):
         self.check_defaults()
 
     def worker_done(self, msg):
-        self.worker = None
+        self.workers[str(msg)] = None
 
     def update_cp(self, msg):
         """Update the progress bar."""
         self.cp.SetValue(msg)
+        self.Update()
     
     def update_fp(self, msg):
         """Update the progress bar."""
         self.fp.SetValue(msg)
+        self.Update()
 
     def InitUI(self):
         """."""
@@ -252,7 +255,7 @@ class SolGUI(wx.Frame):
     def save_cont_dir(self):
         dlg = wx.DirDialog(self.panel,
                            "Choose output directory",
-                           self.app_path,
+                           os.getcwd(),
                            wx.DD_DEFAULT_STYLE)
         if dlg.ShowModal() == wx.ID_OK:
             self.odc = dlg.GetPath()
@@ -265,7 +268,7 @@ class SolGUI(wx.Frame):
     def save_form_dir(self):
         dlg = wx.DirDialog(self.panel,
                            "Choose output directory",
-                           self.app_path,
+                           os.getcwd(),
                            wx.DD_DEFAULT_STYLE | wx.DD_DIR_MUST_EXIST)
         if dlg.ShowModal() == wx.ID_OK:
             self.odf = dlg.GetPath()
@@ -278,18 +281,27 @@ class SolGUI(wx.Frame):
     def check_defaults(self):
         if os.path.exists(os.path.join(self.app_path, 'Ledenexport.csv')):
             self.lbl_1.SetValue(os.path.join(self.app_path, 'Ledenexport.csv'))
-
+        
+        if os.path.exists(os.path.join(os.getcwd(), 'Ledenexport.csv')):
+            self.lbl_1.SetValue(os.path.join(os.getcwd(), 'Ledenexport.csv'))
+        
+        if self.lbl_1.GetValue():
             # Parse SOL export file
             self.members = ScoutsCollection()
             self.members(self.lbl_1.GetValue())
 
             # Enable buttons
             self.form_btn.Enable()
-            self.sizer.Layout()
-
+        else:
+            self.lbl_1.SetValue('')
+            
         if os.path.exists(os.path.join(self.app_path, 'contributie.ini')):
             self.lbl_2.SetValue(os.path.join(self.app_path, 'contributie.ini'))
-            
+
+        if os.path.exists(os.path.join(os.getcwd(), 'contributie.ini')):
+            self.lbl_2.SetValue(os.path.join(os.getcwd(), 'contributie.ini'))
+        
+        if self.lbl_2.GetValue():
             # Read contributie file and create dict of values
             reader = ConfigParser()
             reader.read(self.lbl_2.GetValue())
@@ -300,8 +312,12 @@ class SolGUI(wx.Frame):
 
             # Enable buttons
             self.cont_btn.Enable()
-            self.sizer.Layout()
-
+            
+        else:
+            self.lbl_2.SetValue('')
+            
+        self.sizer.Layout()
+            
     def open_ledenexport(self, event):
         """."""
         fd = wx.FileDialog(self.panel,
@@ -349,14 +365,13 @@ class SolGUI(wx.Frame):
             members (ScoutsCollection): Members read from csv file
             od (string): output dirctory where to store the generated forms
         """
-        
-        if not self.worker:
+        if not self.workers["form"]:
             if self.save_form_dir():
-                self.worker = WorkerThread(self, 'form')
+                self.workers["form"] = WorkerThread(self, 'form')
                 self.form_btn.SetLabel("Abort")
         else:
-            self.worker.abort()
-            self.worker.join()
+            self.workers["form"].abort()
+            self.workers["form"].join()
             self.form_btn.SetLabel("ScoutsForms")
 
     def Contribution_Letter(self, event):
@@ -372,18 +387,17 @@ class SolGUI(wx.Frame):
             od (string): output directory where to store the generated letters
         """
 
-        if not self.worker:
+        if not self.workers["cont"]:
             wndw2 = AdressGUI(self)
             wndw2.ShowModal()
             wndw2.Destroy()
-            AdressGUI(self).ShowModal()
 
             if self.save_cont_dir():
-                self.worker = WorkerThread(self, 'cont')
+                self.workers["cont"] = WorkerThread(self, 'cont')
                 self.cont_btn.SetLabel("Abort")
         else:
-            self.worker.abort()
-            self.worker.join()
+            self.workers["cont"].abort()
+            self.workers["cont"].join()
             self.cont_btn.SetLabel("Contributie")
 
 
@@ -409,9 +423,8 @@ class AdressGUI(wx.Dialog):
         # Build dialog
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         panel1 = wx.Panel(self, size=(600, 50), pos=(0, 0), style=wx.SIMPLE_BORDER)
-        panel1.SetBackgroundColour('#FDDF99')
 
-        panel2 = wx.lib.scrolledpanel.ScrolledPanel(self, -1, size=(600, 130), pos=(0, 30), style=wx.SIMPLE_BORDER)
+        panel2 = wx.lib.scrolledpanel.ScrolledPanel(self, -1, size=(585, 130), pos=(0, 30), style=wx.SIMPLE_BORDER)
         panel2.SetupScrolling()
         panel2.SetBackgroundColour('#FFFFFF')
         
@@ -424,9 +437,9 @@ class AdressGUI(wx.Dialog):
         # Checkbox for automatic incasso
         self.cb = wx.CheckBox(panel,
                               label=obj,
-                              size=(580, 25))
+                              size=(550, 25))
         self.cb.Bind(wx.EVT_CHECKBOX, self.onChecked)
-        self.sizer.Add(self.cb)
+        self.sizer.Add(self.cb, 1, wx.LEFT, 5)
         self.ids.append(self.cb.GetId())
 
     def onChecked(self, e):
@@ -448,9 +461,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-#if __name__ == '__main__':
-#    app = wx.App()
-#    frame = AdressGUI(parent=None, id=-1, title="Voeg administratie kosten toe")
-#    frame.Show()
-#    app.MainLoop()
