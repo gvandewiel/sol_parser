@@ -152,8 +152,8 @@ class Contribution():
 
                 # The same discount is applied when the member has a kid
                 # which is a active member (i.e. the boolean bJeugdlid should be true)
-                if 'stam' in normalize(lid.speleenheid) and self.bjeugdlid:
-                    lid.speleenheid = "stam_leiding"
+                # if 'stam' in normalize(lid.speleenheid) and self.bjeugdlid:
+                #     lid.speleenheid = "stam_leiding"
 
                 # Determine the contribution factor
                 # 1 for each scout upto 2 per adres.
