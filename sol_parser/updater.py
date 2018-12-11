@@ -4,13 +4,6 @@ import os
 import sys
     
 class Updater(object):
-    def __init__(self, dl_url, force_update=False):
-        """
-        Attempts to download the update url in order to find if an update is needed.
-        If an update is needed, the current script is backed up and the update is
-        saved in its place.
-        """
-
     def num(s):
         if s.isdigit(): return int(s)
         return s
@@ -40,40 +33,48 @@ class Updater(object):
             if vB.endswith('-SNAPSHOT'): return 1
         return rc
 
-    # dl the first 256 bytes and parse it for version number
-    try:
-        http_stream = urllib.urlopen(dl_url)
-        update_file = http_stream.read(256)
-        http_stream.close()
-    except IOError, (errno, strerror):
-        print "Unable to retrieve version data"
-        print "Error %s: %s" % (errno, strerror)
-        return
+    def __init__(self, dl_url, force_update=False):
+        """
+        Attempts to download the update url in order to find if an update is needed.
+        If an update is needed, the current script is backed up and the update is
+        saved in its place.
+        """
 
-    match_regex = re.search(r'__version__ *= *"(\S+)"', update_file)
-    if not match_regex:
-        print "No version info could be found"
-        return
-    update_version = match_regex.group(1)
+    def check_version(self):
+        # dl the first 256 bytes and parse it for version number
+        try:
+            http_stream = urllib.urlopen(dl_url)
+            update_file = http_stream.read(256)
+            http_stream.close()
+        except IOError, (errno, strerror):
+            print "Unable to retrieve version data"
+            print "Error %s: %s" % (errno, strerror)
+            return
 
-    if not update_version:
-        print "Unable to parse version data"
-        return
+        match_regex = re.search(r'__version__ *= *"(\S+)"', update_file)
+        if not match_regex:
+            print "No version info could be found"
+            return
+        update_version = match_regex.group(1)
+
+        if not update_version:
+            print "Unable to parse version data"
+            return
     
-    if force_update:
-        print "Forcing update, downloading version %s..." \
+        if force_update:
+            print "Forcing update, downloading version %s..." \
             % update_version
-    else:
-        cmp_result = compare_versions(__version__, update_version)
-        if cmp_result < 0:
-            print "Newer version %s available, downloading..." % update_version
-        elif cmp_result > 0:
-            print "Local version %s newer then available %s, not updating." \
-                % (__version__, update_version)
-            return
         else:
-            print "You already have the latest version."
-            return
+            cmp_result = compare_versions(__version__, update_version)
+            if cmp_result < 0:
+                print "Newer version %s available, downloading..." % update_version
+            elif cmp_result > 0:
+                print "Local version %s newer then available %s, not updating." \
+                % (__version__, update_version)
+                return
+            else:
+                print "You already have the latest version."
+                return
 
     # dl, backup, and save the updated script
     app_path = os.path.realpath(sys.argv[0])
