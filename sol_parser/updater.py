@@ -2,13 +2,15 @@ import urllib
 import re
 import os
 import sys
+
+__version__ = "0"
     
 class Updater(object):
-    def num(s):
+    def num(self, s):
         if s.isdigit(): return int(s)
         return s
 
-    def compare_versions(vA, vB):
+    def compare_versions(self, vA, vB):
         """
         Compares two version number strings
         @param vA: first version string to compare
@@ -18,8 +20,8 @@ class Updater(object):
         """
         if vA == vB: return 0
 
-        seqA = map(num, re.findall('\d+|\w+', vA.replace('-SNAPSHOT', '')))
-        seqB = map(num, re.findall('\d+|\w+', vB.replace('-SNAPSHOT', '')))
+        seqA = map(self.num, re.findall('\d+|\w+', vA.replace('-SNAPSHOT', '')))
+        seqB = map(self.num, re.findall('\d+|\w+', vB.replace('-SNAPSHOT', '')))
 
         # this is to ensure that 1.0 == 1.0.0 in cmp(..)
         lenA, lenB = len(seqA), len(seqB)
@@ -47,7 +49,7 @@ class Updater(object):
         if not os.access(self.app_path, os.W_OK):
             print("Cannot update -- unable to write to {}".format(self.app_path))
         else:
-            if self.check_verion():
+            if self.check_version():
                 if self.download_update() and self.backup_existing() and self.install_update():
                     print("New version installed as {}".format(self.app_path))
                     print("(previous version backed up to {})".format(self.backup_path))
@@ -77,11 +79,11 @@ class Updater(object):
             print("Unable to parse version data")
             return False
     
-        if force_update:
+        if self.force_update:
             print("Forcing update, downloading version {}...".format(update_version))
             return True
         else:
-            cmp_result = compare_versions(__version__, update_version)
+            cmp_result = self.compare_versions(__version__, update_version)
             if cmp_result < 0:
                 print("Newer version {} available, downloading...".format(update_version))
                 return True
@@ -156,4 +158,6 @@ class Updater(object):
         except:
             os.chmod(self.app_path, 0755)
 
+up = Updater("https://gist.githubusercontent.com/Haaruun-I/7742df86770cc7c2066b99dca05186e9/raw/6d1c687b311978b71d083ee0914d2e56938b20e5/self-update-script.py")
+up()
 # update("https://gist.githubusercontent.com/Haaruun-I/7742df86770cc7c2066b99dca05186e9/raw/6d1c687b311978b71d083ee0914d2e56938b20e5/self-update-script.py")
