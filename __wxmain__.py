@@ -1,3 +1,4 @@
+#!/usr/bin/env python3.7
 import os
 import sys
 from configparser import ConfigParser
@@ -448,16 +449,31 @@ class AdressGUI(wx.Dialog):
         self.parent.address_list[lbl]['aac'] = cb.GetValue()
 
 
-def main():
-    app = wx.App(False)
-    app_path = os.path.dirname(sys.argv[0])
-    if app_path == '':
-        app_path = os.getcwd()
+def run_simple(use_reloader=False, extra_files=None, reloader_interval=1, reloader_type='auto'):
 
-    ex = SolGUI(None, title="SOL PARSER", app_path=app_path)
-    ex.Show()
-    app.MainLoop()
-    print('Finished main loop')
+    def inner():
+        app = wx.App(False)
+        app_path = os.path.dirname(sys.argv[0])
+        if app_path == '':
+            app_path = os.getcwd()
+
+        ex = SolGUI(None, title="SOL PARSER", app_path=app_path)
+        ex.Show()
+        app.MainLoop()
+        print('Finished main loop')
+
+    if use_reloader:
+        # Do not use relative imports, otherwise "python -m werkzeug.serving"
+        # breaks.
+        from sol_parser._reloader import run_with_reloader
+        run_with_reloader(inner, extra_files, reloader_interval,
+                          reloader_type)
+    else:
+        inner()
+
+
+def main():
+    run_simple(use_reloader=True)
 
 if __name__ == '__main__':
     main()
