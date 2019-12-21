@@ -160,9 +160,9 @@ class Contribution():
                 # From the 3rd scout a 50% discout is applied.
                 self.cnt += 1
                 if self.cnt > 2:
-                    self.s_contr = 0.5 * self.cd[lid.speleenheid]
+                    self.s_contr = 0.5 * self.cd[normalize(lid.speleenheid)]
                 else:
-                    self.s_contr = 1.0 * self.cd[lid.speleenheid]
+                    self.s_contr = 1.0 * self.cd[normalize(lid.speleenheid)]
 
                 self.t_contr += self.s_contr
 
@@ -225,7 +225,7 @@ class Contribution():
                            align='L',
                            ln=0)
             
-            self.spdf.cell(w=0, h=6, border='B', txt=lid.lid_e_mailadres, align='L', ln=1)
+            self.spdf.cell(w=0, h=6, border='B', txt=lid.e_mailadres, align='L', ln=1)
 
             self.spdf.set_xy(100, self.spdf.al)
             print(self.t_contr)
@@ -249,7 +249,7 @@ class Contribution():
 
             # Print pdf output
             self.pdf.output(os.path.join(self.output_dir, '{}{}{:03} - {}.pdf'.format(lid.season_start,
-                                                                                      lid.season_end, type(self).iNotanumber, lid.lid_e_mailadres)), 'F')
+                                                                                      lid.season_end, type(self).iNotanumber, lid.e_mailadres)), 'F')
         else:
             # Print total contribution (=0) on adres line
             self.spdf.font(style='B', size=9)
